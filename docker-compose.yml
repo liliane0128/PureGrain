@@ -19,7 +19,7 @@ services:
 
   api:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
@@ -28,11 +28,11 @@ services:
       DATABASE_URL: postgresql+asyncpg://puregrain:puregrain@db:5432/puregrain
       DEBUG: "false"
     volumes:
-      - model_data:/app/app/data   # trained model persists across restarts
+      - model_data:/app/app/data
     depends_on:
       db:
         condition: service_healthy
 
 volumes:
-  postgres_data:   # PostgreSQL data files
-  model_data:      # Random Forest model artifact
+  postgres_data:
+  model_data:

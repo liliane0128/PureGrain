@@ -38,7 +38,6 @@ GPS coordinates  →  Open-Meteo API  →  48h temp & humidity
 ## Quick start
 
 ```bash
-cd backend
 make up        # build + start db & api
 make logs      # follow logs
 ```
