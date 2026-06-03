@@ -1,0 +1,38 @@
+services:
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: puregrain
+      POSTGRES_PASSWORD: puregrain
+      POSTGRES_DB: puregrain
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U puregrain -d puregrain"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://puregrain:puregrain@db:5432/puregrain
+      DEBUG: "false"
+    volumes:
+      - model_data:/app/app/data   # trained model persists across restarts
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:   # PostgreSQL data files
+  model_data:      # Random Forest model artifact
