@@ -1,8 +1,10 @@
 from datetime import datetime
 from pydantic import BaseModel
 
+# Schémas pour la table Parcelle
 
-class ParcelleCreate(BaseModel):
+class ParcelleBase(BaseModel):
+    """Schéma de base pour une parcelle."""
     name: str
     location: str | None = None
     latitude: float | None = None
@@ -11,23 +13,19 @@ class ParcelleCreate(BaseModel):
     notes: str | None = None
 
 
-class ParcelleUpdate(BaseModel):
-    name: str | None = None
-    location: str | None = None
-    latitude: float | None = None
-    longitude: float | None = None
-    cereal_type: str | None = None
-    notes: str | None = None
+class ParcelleCreate(ParcelleBase):
+    """Schéma pour la création d'une parcelle (POST)"""
+    pass
 
 
-class ParcelleRead(BaseModel):
+class ParcelleUpdate(ParcelleBase):
+    """Schéma pour la mise à jour d'une parcelle (PATCH)"""
+    pass
+
+
+class ParcelleRead(ParcelleBase):
+    """Schéma pour la consulation d'une parcelle (GET)"""
     id: int
-    name: str
-    location: str | None
-    latitude: float | None
-    longitude: float | None
-    cereal_type: str | None
-    notes: str | None
     created_at: datetime
 
     model_config = {"from_attributes": True}

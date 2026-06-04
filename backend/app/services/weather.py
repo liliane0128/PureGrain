@@ -13,11 +13,11 @@ OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 
 @dataclass
 class WeatherWindow:
-    temperature_mean: float // average temperature over the window
-    humidity_mean: float // average humidity over the window
+    temperature_mean: float # average temperature over the window
+    humidity_mean: float # average humidity over the window
     temperature_max: float
     temperature_min: float
-    temperature_amplitude: float // max - min
+    temperature_amplitude: float # max - min
 
 
 @dataclass
@@ -27,12 +27,12 @@ class WeatherSnapshot:
     window_24h: WeatherWindow
     window_48h: WeatherWindow
     fetched_at: datetime
-    raw_temp_48h: list[float] // raw hourly temperatures for the last 48h (after filtering out None)
-    raw_humidity_48h: list[float] // raw hourly humidity values for the last 48h (after filtering out None) 
+    raw_temp_48h: list[float] # raw hourly temperatures for the last 48h (after filtering out None)
+    raw_humidity_48h: list[float] # raw hourly humidity values for the last 48h (after filtering out None) 
 
 
 def _compute_window(temps: list[float], humids: list[float]) -> WeatherWindow:
-    t_max = round(max(temps), 2) // round to 2 decimals for consistency
+    t_max = round(max(temps), 2) # round to 2 decimals for consistency
     t_min = round(min(temps), 2)
     return WeatherWindow(
         temperature_mean=round(sum(temps) / len(temps), 2),
