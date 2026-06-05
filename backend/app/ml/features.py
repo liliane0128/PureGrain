@@ -16,10 +16,10 @@ FEATURE_NAMES = [
     "temp_mean_48h",
     "humidity_mean_48h",
     "thermal_amplitude_48h",
-    "humidity_trend",          # humidité 48h → 24h
-    "temp_x_humidity_24h",     # interaction temp*humidité
+    "humidity_trend",        
+    "temp_x_humidity_24h",   
     "days_since_harvest",
-    "zen_x_moisture",          # interaction capteur*humidité grain
+    "zen_x_moisture",  
 ]
 
 FEATURE_DESCRIPTIONS = {

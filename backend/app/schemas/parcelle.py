@@ -18,9 +18,14 @@ class ParcelleCreate(ParcelleBase):
     pass
 
 
-class ParcelleUpdate(ParcelleBase):
+class ParcelleUpdate(BaseModel):
     """Schéma pour la mise à jour d'une parcelle (PATCH)"""
-    pass
+    name: str | None = None
+    location: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    cereal_type: str | None = None
+    notes: str | None = None
 
 
 class ParcelleRead(ParcelleBase):
