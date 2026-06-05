@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.api.routes import predict, health, parcelles
+from app.api.routes import predict, health, parcelles, imports
 
 
 @asynccontextmanager
@@ -31,6 +31,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(predict.router, prefix="/api/v1")
 app.include_router(parcelles.router, prefix="/api/v1")
+app.include_router(imports.router, prefix="/api/v1")
 
 
 @app.get("/")
