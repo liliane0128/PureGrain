@@ -213,7 +213,9 @@ async def weather_preview_and_save(payload: dict):
         }
 
         if confirm:
-            data_dir = Path(__file__).resolve().parents[1] / "data"
+            # Save CSV into `app1/api/data` under the project root as requested.
+            # Resolve project root and create app1/api/data if necessary.
+            data_dir = Path(__file__).resolve().parents[3] / "app" / "api" / "data"
             data_dir.mkdir(parents=True, exist_ok=True)
             timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
             filename = f"weather_{lat:.5f}_{lon:.5f}_{timestamp}.csv"

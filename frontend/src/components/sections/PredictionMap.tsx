@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { CloudRain, Droplets, Gauge, Sun, Thermometer, Wind } from 'lucide-react';
 import { SatelliteMap, type MapLocation } from './SatelliteMap';
+import ImportCSV from '../ImportCSV';
 
 const fungalTargets = ['Fusarium graminearum', 'Fusarium culmorum', 'Fusarium verticillioides'];
 
@@ -357,6 +358,46 @@ export function PredictionMap() {
     setHasSubmitted(false);
   };
 
+  const [weatherPreview, setWeatherPreview] = useState<any | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  const callWeather = async (confirm = false) => {
+    if (!selectedLocation) return;
+    const payload = { latitude: selectedLocation.lat, longitude: selectedLocation.lng, confirm } as any;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+    try {
+      if (confirm) setConfirmLoading(true);
+      else setPreviewLoading(true);
+      const res = await fetch(`${apiUrl}/api/v1/map/weather`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      let data: any;
+      const ct = res.headers.get('content-type') || '';
+      if (ct.includes('application/json')) {
+        try {
+          data = await res.json();
+        } catch (e) {
+          data = { detail: `Invalid JSON response: ${String(e)}` };
+        }
+      } else {
+        const text = await res.text();
+        data = { detail: text };
+      }
+
+      if (!res.ok) throw new Error(data?.detail ?? JSON.stringify(data));
+      setWeatherPreview(data.preview ?? data);
+    } catch (err: any) {
+      setWeatherPreview({ error: err.message ?? String(err) });
+    } finally {
+      setPreviewLoading(false);
+      setConfirmLoading(false);
+    }
+  };
+
   const launchSimulation = async () => {
     if (!selectedLocation) return;
     setIsLoading(true);
@@ -503,6 +544,38 @@ export function PredictionMap() {
                 </strong>
                 <small>Date d&apos;analyse: {today}</small>
               </div>
+
+              <ImportCSV />
+
+              {selectedLocation && (
+                <div style={{ marginTop: 10 }}>
+                  <label style={{ display: 'block', fontSize: 13, marginBottom: 6 }}>Générer la météo</label>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => callWeather(false)}
+                      disabled={previewLoading}
+                    >
+                      {previewLoading ? 'Prévisualisation...' : 'Prévisualiser la météo'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => callWeather(true)}
+                      disabled={confirmLoading}
+                    >
+                      {confirmLoading ? 'Création...' : 'Confirmer et créer CSV'}
+                    </button>
+                  </div>
+
+                  {weatherPreview && (
+                    <pre style={{ maxHeight: 160, overflow: 'auto', background: '#0f172a', color: '#e6eef8', padding: 8 }}>
+                      {JSON.stringify(weatherPreview, null, 2)}
+                    </pre>
+                  )}
+                </div>
+              )}
 
               <button
                 type="button"
