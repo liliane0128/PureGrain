@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.schemas.imported_record import ImportedRecordRead
 from app.services.csv_import import import_csv
 
 router = APIRouter(prefix="/imports", tags=["imports"])

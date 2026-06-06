@@ -7,6 +7,7 @@ from app.db.models.imported_record import ImportedRecord
 from app.db.models.prediction_result import Prediction
 from app.schemas.imported_record import MapDataItem
 
+
 router = APIRouter(prefix="/map", tags=["map"])
 
 
@@ -25,9 +26,7 @@ async def get_map_data(db: AsyncSession = Depends(get_db)):
     stmt = (
         select(ImportedRecord, Prediction)
         .outerjoin(Prediction, Prediction.imported_record_id == ImportedRecord.id)
-        .where(ImportedRecord.latitude.isnot(None))
-        .where(ImportedRecord.longitude.isnot(None))
-        .order_by(desc(ImportedRecord.sample_date).nullslast())
+        .order_by(desc(ImportedRecord.imported_at))
         .limit(5000)
     )
 
@@ -43,19 +42,17 @@ async def get_map_data(db: AsyncSession = Depends(get_db)):
         items.append(
             MapDataItem(
                 id=imported_record.id,
-                country_name=(
-                    imported_record.sample_country_name
-                    or imported_record.reporting_country_name
-                    or imported_record.origin_country_label_fr
-                ),
-                latitude=imported_record.latitude,
-                longitude=imported_record.longitude,
-                crop_group=imported_record.crop_group,
-                product_name=imported_record.product_name,
-                zen_value_ug_kg=imported_record.zen_value_ug_kg,
+                country_name=imported_record.location_country,
+                crop_type=imported_record.crop_type,
+                toxin_name=imported_record.toxin_name,
+                toxin_value_standardized_ug_kg=imported_record.toxin_value_standardized_ug_kg,
+                toxin_detected=imported_record.toxin_detected,
+                fungal_species=imported_record.fungal_species,
+                association_type=imported_record.association_type,
+                sample_year=imported_record.sample_year,
+                timestamp=imported_record.timestamp,
                 risk_score=risk_score,
                 risk_level=risk_level,
-                sample_date=imported_record.sample_date,
             )
         )
 
