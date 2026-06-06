@@ -43,5 +43,7 @@ class MapDataItem(BaseModel):
     association_type: str | None = None
     sample_year: int | None = None
     timestamp: datetime | None = None
+    risk_score: float | None = None
+    risk_level: str | None = None
 
     model_config = ConfigDict(from_attributes=True)

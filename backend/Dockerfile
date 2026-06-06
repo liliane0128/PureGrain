@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements-docker.txt requirements.txt ./
 RUN pip install --no-cache-dir -r requirements-docker.txt
 
-# Copy application code
+# Copy application code (includes app/training_data/weather_added_1.csv)
 COPY alembic.ini ./
 COPY alembic/ ./alembic/
 COPY app/ ./app/
@@ -20,7 +20,7 @@ COPY app/ ./app/
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# model.joblib lives in a volume; this dir must exist
+# model artifacts live in a volume; training_data stays in the image
 RUN mkdir -p app/data
 
 EXPOSE 8000

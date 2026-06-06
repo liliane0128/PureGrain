@@ -1,25 +1,35 @@
-.PHONY: up down logs migrate psql retrain shell clean
+.PHONY: up down logs logs-api front migrate psql retrain retrain-weather shell clean
 
-up:       ## Start everything
+up:              ## Build + start backend (Docker) and frontend (local, port 3000)
 	docker compose up -d --build
+	cd frontend && npm install && npm run dev
 
-down:     ## Stop everything
+front:           ## Start frontend locally only (port 3000)
+	cd frontend && npm install && npm run dev
+
+down:            ## Stop Docker containers
 	docker compose down
 
-logs:     ## Tail all logs
+logs:            ## Tail logs from all services
 	docker compose logs -f
 
-migrate:  ## Run migrations
+logs-api:        ## Tail api logs only
+	docker compose logs -f api
+
+migrate:         ## Run Alembic migrations
 	docker compose exec api alembic upgrade head
 
-psql:     ## Open postgres shell
+psql:            ## Open a psql shell
 	docker compose exec db psql -U puregrain -d puregrain
 
-retrain:  ## Retrain the model
+retrain:         ## Retrain the synthetic Random Forest model
 	docker compose exec api python -m app.ml.train
 
-shell:    ## Bash into api container
+retrain-weather: ## Retrain the weather-based Random Forest model
+	docker compose exec api python -m app.ml.train_weather
+
+shell:           ## Bash into the api container
 	docker compose exec api bash
 
-clean:    ## Stop + delete volumes (data loss!)
+clean:           ## Stop containers and delete all volumes (data loss!)
 	docker compose down -v
