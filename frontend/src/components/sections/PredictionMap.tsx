@@ -233,6 +233,9 @@ export function PredictionMap() {
   const [selectedToxin, setSelectedToxin] = useState<ToxinLabel>(toxinTargets[0].label);
   const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [weatherPreview, setWeatherPreview] = useState<any | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [weatherError, setWeatherError] = useState<string | null>(null);
   const currentDate = useMemo(() => new Date(), []);
   const today = useMemo(() => formatDate(currentDate), [currentDate]);
   
@@ -250,6 +253,48 @@ export function PredictionMap() {
     setSelectedLocation(location);
     setHasSubmitted(false);
   };
+
+  const weatherApiUrl = process.env.NEXT_PUBLIC_WEATHER_API_URL || "http://localhost:8000/api/v1/map/weather";
+
+  async function fetchWeather(confirm = false) {
+    setWeatherError(null);
+    setWeatherLoading(true);
+    setWeatherPreview(null);
+    try {
+      if (!selectedLocation) throw new Error("Aucune position sélectionnée");
+      const payload = {
+        latitude: selectedLocation.lat,
+        longitude: selectedLocation.lng,
+        days: 7,
+        confirm,
+      };
+
+      const res = await fetch(weatherApiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const text = await res.text();
+      let data: any = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch (e) {
+        data = { raw: text };
+      }
+
+      if (!res.ok) {
+        const detail = data?.detail ?? data ?? text;
+        throw new Error(String(detail));
+      }
+
+      setWeatherPreview(data);
+    } catch (e: any) {
+      setWeatherError(e?.message ?? "Erreur réseau");
+    } finally {
+      setWeatherLoading(false);
+    }
+  }
 
   return (
     <section id="prediction-map" className="prediction-dashboard-section">
@@ -333,6 +378,51 @@ export function PredictionMap() {
             {/* Upload CSV intégré dans le panneau de configuration pour rester visible */}
             <div style={{ marginTop: 12 }}>
               <ImportCSV />
+            </div>
+
+            {/* Weather preview & save controls */}
+            <div style={{ marginTop: 12 }}>
+              <h4 style={{ marginBottom: 8 }}>Météo & CSV</h4>
+              <div className="prediction-field-group">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => fetchWeather(false)}
+                  disabled={!selectedLocation || weatherLoading}
+                >
+                  {weatherLoading ? "Chargement..." : "Prévisualiser la météo"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => fetchWeather(true)}
+                  disabled={!selectedLocation || weatherLoading}
+                  style={{ marginLeft: 8 }}
+                >
+                  {weatherLoading ? "En cours..." : "Confirmer et créer CSV"}
+                </button>
+              </div>
+
+              {weatherError && <div className="text-red-600 mt-2">Erreur: {weatherError}</div>}
+
+              {weatherPreview && (
+                <div className="mt-3 bg-white p-2 rounded shadow-sm">
+                  <div style={{ fontSize: 12, marginBottom: 6 }}>
+                    <strong>Aperçu météo</strong> — {weatherPreview.n_rows} jours
+                  </div>
+                  <div style={{ fontSize: 12 }}>
+                    <div>Temp moyenne (moy): {String(weatherPreview.aggregates.temperature_2m_mean)}</div>
+                    <div>Précipitations totales: {String(weatherPreview.aggregates.precipitation_sum)}</div>
+                    {weatherPreview.filename && (
+                      <div className="text-green-700">Fichier créé: {weatherPreview.filename}</div>
+                    )}
+                  </div>
+                  <details className="mt-2">
+                    <summary className="text-sm text-muted">Voir échantillon</summary>
+                    <pre className="text-xs mt-2 max-h-40 overflow-auto">{JSON.stringify(weatherPreview.sample, null, 2)}</pre>
+                  </details>
+                </div>
+              )}
             </div>
           </div>
 
