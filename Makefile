@@ -1,4 +1,4 @@
-.PHONY: up down logs logs-api front migrate psql retrain retrain-weather shell clean
+.PHONY: up down logs logs-api front migrate psql import-test shell clean
 
 up:              ## Build + start backend (Docker) and frontend (local, port 3000)
 	docker compose up -d --build
@@ -22,11 +22,9 @@ migrate:         ## Run Alembic migrations
 psql:            ## Open a psql shell
 	docker compose exec db psql -U puregrain -d puregrain
 
-retrain:         ## Retrain the synthetic Random Forest model
-	docker compose exec api python -m app.ml.train
-
-retrain-weather: ## Retrain the weather-based Random Forest model
-	docker compose exec api python -m app.ml.train_weather
+import-test:     ## Import test CSV (backend/app/data/input.csv) into the DB
+	curl -s -X POST http://localhost:8000/api/v1/imports/csv \
+		-F "file=@backend/app/data/input.csv" | python3 -m json.tool
 
 shell:           ## Bash into the api container
 	docker compose exec api bash
