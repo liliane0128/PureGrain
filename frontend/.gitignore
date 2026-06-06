@@ -53,3 +53,6 @@ logs
 .DS_Store
 Thumbs.db
 .vercel
+
+# Sessions PyMOL volumineuses (ne pas committer)
+public/mol/*.pse

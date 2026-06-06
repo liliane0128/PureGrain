@@ -7,10 +7,11 @@ const TILE_SIZE = 256;
 // netteté sans multiplier le nombre de tuiles (chargement rapide et propre, y
 // compris au premier clic de zoom).
 const HD_TILE_ZOOM_OFFSET = 1;
-// Niveau de tuiles max réellement fourni par la couche s2cloudless (au-delà → 404).
-const MAX_TILE_ZOOM = 9;
+// Esri World Imagery fournit des tuiles jusqu'au niveau ~19 → on peut descendre
+// jusqu'à la parcelle.
+const MAX_TILE_ZOOM = 19;
 const MIN_ZOOM = 5;
-const MAX_ZOOM = 8;
+const MAX_ZOOM = 17;
 const ZOOM_ANIMATION_MS = 420;
 const INITIAL_VIEW = {
   lat: 46.45,
@@ -77,7 +78,14 @@ function unproject(x: number, y: number, zoom: number) {
 }
 
 function tileUrl(zoom: number, x: number, y: number) {
-  return `https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2021_3857/default/g/${zoom}/${y}/${x}.jpg`;
+  return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${y}/${x}`;
+}
+
+// Tuiles transparentes "labels only" (noms de villes, frontières) superposées
+// au satellite. CARTO sert ces overlays en PNG via les sous-domaines a-d.
+function labelUrl(zoom: number, x: number, y: number) {
+  const sub = 'abcd'[(x + y) % 4];
+  return `https://${sub}.basemaps.cartocdn.com/rastertiles/dark_only_labels/${zoom}/${x}/${y}.png`;
 }
 
 export function SatelliteMap({ selectedLocation = null, onLocationSelect }: SatelliteMapProps) {
@@ -90,10 +98,15 @@ export function SatelliteMap({ selectedLocation = null, onLocationSelect }: Sate
   const viewRef = useRef<View>(INITIAL_VIEW);
   const [isDragging, setIsDragging] = useState(false);
   const [size, setSize] = useState({ width: 0, height: 0 });
+  const sizeRef = useRef(size);
 
   useEffect(() => {
     viewRef.current = view;
   }, [view]);
+
+  useEffect(() => {
+    sizeRef.current = size;
+  }, [size]);
 
   useEffect(() => {
     const node = mapRef.current;
@@ -140,6 +153,48 @@ export function SatelliteMap({ selectedLocation = null, onLocationSelect }: Sate
     });
   }, []);
 
+  // Zoom à la molette, centré sur le curseur (le point sous la souris reste fixe).
+  // Listener non passif pour pouvoir bloquer le scroll de page pendant le zoom carte.
+  useEffect(() => {
+    const node = mapRef.current;
+
+    if (!node) {
+      return;
+    }
+
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+
+      const rect = node.getBoundingClientRect();
+      const cursorX = event.clientX - rect.left;
+      const cursorY = event.clientY - rect.top;
+      const current = viewRef.current;
+      const width = Math.max(sizeRef.current.width, 1);
+      const height = Math.max(sizeRef.current.height, 1);
+      const nextZoom = clamp(current.zoom - event.deltaY * 0.0045, MIN_ZOOM, MAX_ZOOM);
+
+      if (nextZoom === current.zoom) {
+        return;
+      }
+
+      const center = project(current.lat, current.lng, current.zoom);
+      const topLeft = { x: center.x - width / 2, y: center.y - height / 2 };
+      const geo = unproject(topLeft.x + cursorX, topLeft.y + cursorY, current.zoom);
+      const projected = project(geo.lat, geo.lng, nextZoom);
+      const nextCenter = unproject(
+        projected.x - (cursorX - width / 2),
+        projected.y - (cursorY - height / 2),
+        nextZoom
+      );
+
+      scheduleView({ lat: nextCenter.lat, lng: nextCenter.lng, zoom: nextZoom });
+    };
+
+    node.addEventListener('wheel', onWheel, { passive: false });
+
+    return () => node.removeEventListener('wheel', onWheel);
+  }, [scheduleView]);
+
   const geometry = useMemo(() => {
     const width = Math.max(size.width, 1);
     const height = Math.max(size.height, 1);
@@ -152,7 +207,7 @@ export function SatelliteMap({ selectedLocation = null, onLocationSelect }: Sate
     // Construit l'ensemble des tuiles couvrant le viewport pour un offset de niveau
     // donné. Le serveur n'expose que des zooms entiers : on prend le plus proche du
     // zoom courant + l'offset, puis on met à l'échelle (fractionnaire → zoom fluide).
-    const buildTiles = (offset: number) => {
+    const buildTiles = (offset: number, urlFn: (z: number, x: number, y: number) => string) => {
       const tileZoom = clamp(Math.round(view.zoom) + offset, 0, MAX_TILE_ZOOM);
       const tileToView = 2 ** (view.zoom - tileZoom);
       const viewToTile = 1 / tileToView;
@@ -178,7 +233,7 @@ export function SatelliteMap({ selectedLocation = null, onLocationSelect }: Sate
           // les franges d'anti-aliasing et éliminer les coutures entre tuiles.
           tiles.push({
             key: `${tileZoom}-${x}-${y}`,
-            src: tileUrl(tileZoom, tileX, y),
+            src: urlFn(tileZoom, tileX, y),
             left: Math.floor(x * renderedTileSize - topLeft.x),
             size: Math.ceil(renderedTileSize) + 2,
             top: Math.floor(y * renderedTileSize - topLeft.y),
@@ -191,8 +246,10 @@ export function SatelliteMap({ selectedLocation = null, onLocationSelect }: Sate
 
     // Couche de base basse résolution (peu de tuiles, chargement quasi instantané)
     // qui comble le fond pendant que la couche HD se charge → aucun trou au zoom.
-    const baseTiles = buildTiles(0);
-    const tiles = buildTiles(HD_TILE_ZOOM_OFFSET);
+    const baseTiles = buildTiles(0, tileUrl);
+    const tiles = buildTiles(HD_TILE_ZOOM_OFFSET, tileUrl);
+    // Couche de labels (noms de villes) au zoom d'affichage, alignée sur la base.
+    const labelTiles = buildTiles(0, labelUrl);
 
     const selectedMarker = selectedLocation
       ? {
@@ -208,7 +265,7 @@ export function SatelliteMap({ selectedLocation = null, onLocationSelect }: Sate
         }
       : null;
 
-    return { baseTiles, tiles, selectedMarker };
+    return { baseTiles, tiles, labelTiles, selectedMarker };
   }, [selectedLocation, size.height, size.width, view.lat, view.lng, view.zoom]);
 
   const handlePointerDown = useCallback(
@@ -364,6 +421,26 @@ export function SatelliteMap({ selectedLocation = null, onLocationSelect }: Sate
             decoding="async"
             loading="eager"
             fetchPriority="low"
+            style={{
+              height: `${tile.size}px`,
+              transform: `translate3d(${tile.left}px, ${tile.top}px, 0)`,
+              width: `${tile.size}px`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="satellite-map-tile-layer satellite-map-label-layer" aria-hidden="true">
+        {geometry.labelTiles.map((tile) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={tile.key}
+            className="satellite-map-label-tile"
+            src={tile.src}
+            alt=""
+            draggable={false}
+            decoding="async"
+            loading="eager"
             style={{
               height: `${tile.size}px`,
               transform: `translate3d(${tile.left}px, ${tile.top}px, 0)`,

@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { Header } from '@/components/sections/Header';
 import { ScrollReveal } from '@/components/ScrollReveal';
 import { Hero } from '@/components/sections/Hero';
+import { Partners } from '@/components/sections/Partners';
 import { Features } from '@/components/sections/Features';
 import { SynBio } from '@/components/sections/SynBio';
 import { PredictionMap } from '@/components/sections/PredictionMap';
@@ -13,6 +14,7 @@ export default function Home() {
     <>
       {/* Navigation en haut de page */}
       <Header />
+      
       {/* Révélation progressive des éléments au scroll */}
       <ScrollReveal />
 
@@ -21,19 +23,22 @@ export default function Home() {
         {/* Section 1: Hero avec vidéo de démonstration plein écran */}
         <Hero />
 
-        {/* Section 2: Analyse terrain et métriques clés */}
-        <Features />
+        {/* Section 2: Projet & affiliations (biologie de synthèse, logos) */}
+        <Partners />
 
         {/* Section 3: Apport de la biologie de synthèse (coût, rapidité, mobilité) */}
         <SynBio />
 
-        {/* Section 4: Simulateur interactif de prédiction */}
+        {/* Section 4: Analyse terrain et métriques clés */}
+        <Features />
+
+        {/* Section 5: Simulateur interactif de prédiction */}
         <PredictionMap />
 
-        {/* Section 5: Mécanisme de fluorescence BioConversion */}
+        {/* Section 6: Mécanisme de fluorescence BioConversion */}
         <BioConversion />
 
-        {/* Section 6: Briques scientifiques Molecules */}
+        {/* Section 7: Briques scientifiques Molecules */}
         <Molecules />
       </main>
 
