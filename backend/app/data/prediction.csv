@@ -1,0 +1,2 @@
+id,country_name,crop_type,toxin_name,toxin_value_standardized_up_kg,toxin_detected,fungal_species,association_type,sample_year,timestamp,risk_score,risk_level
+id1,Lithuania,Cowpeas,Aflatoxins,6.6,True,Fusarium spp,Reported,2019,2000s,50,Orange
