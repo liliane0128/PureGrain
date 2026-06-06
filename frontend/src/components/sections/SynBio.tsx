@@ -43,7 +43,7 @@ export function SynBio() {
         <div className="synbio-copy">
           <h2>Un test de biologie synthétique pour collecter des données fiables</h2>
           <p className="synbio-lead">
-            Pure Graine a créé un test de terrain fondé sur la biologie synthétique pour mesurer la
+            Pure Grain a créé un test de terrain fondé sur la biologie synthétique pour mesurer la
             contamination directement au plus près des parcelles. L’objectif n’est pas seulement
             d’obtenir un résultat rapide : chaque analyse produit une donnée exploitable, précise et
             contextualisée.

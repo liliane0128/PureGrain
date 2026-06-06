@@ -1,7 +1,6 @@
 'use client';
 
 const HERO_VIDEO_WEBM = '/videos/hero.webm';
-const HERO_VIDEO_MP4 = '/videos/hero.mp4';
 const HERO_VIDEO_POSTER = '/images/leon-mcgregor-Zk3ZUpzSp8c-unsplash.jpg';
 
 /**
@@ -21,9 +20,8 @@ export function Hero() {
         poster={HERO_VIDEO_POSTER}
         aria-hidden="true"
       >
-        {/* WebM (plus léger) servi en priorité, MP4 en repli universel. */}
+        {/* WebM léger servi directement pour éviter de garder un doublon MP4. */}
         <source src={HERO_VIDEO_WEBM} type="video/webm" />
-        <source src={HERO_VIDEO_MP4} type="video/mp4" />
       </video>
 
       {/* Voile d'ombrage pour maximiser le contraste des textes */}
@@ -33,7 +31,7 @@ export function Hero() {
       <div className="hero-container">
         <div className="hero-header-text">
           <h1 className="hero-main-title">Du laboratoire au champ</h1>
-          <p className="hero-sub-title">Pure Graine teste, apprend et prédit.</p>
+          <p className="hero-sub-title">Pure Grain teste, apprend et prédit.</p>
         </div>
 
         <div className="hero-footer-content">

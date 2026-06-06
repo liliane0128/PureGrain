@@ -9,7 +9,7 @@ type CropData = {
   label: string;
   residueKgPerHa: number;
   marketPricePerTonne: number;
-  pureGrainePremiumPct: number;
+  pureGrainPremiumPct: number;
   recoveryRate: number;
 };
 
@@ -25,14 +25,14 @@ const CROPS: Record<CropKey, CropData> = {
     label: 'Blé tendre',
     residueKgPerHa: 4200,
     marketPricePerTonne: 55,
-    pureGrainePremiumPct: 15,
+    pureGrainPremiumPct: 15,
     recoveryRate: 0.65,
   },
   mais: {
     label: 'Maïs grain',
     residueKgPerHa: 6500,
     marketPricePerTonne: 42,
-    pureGrainePremiumPct: 20,
+    pureGrainPremiumPct: 20,
     recoveryRate: 0.55,
   },
 };
@@ -55,24 +55,24 @@ function computeCerealSimulation(hectares: number, cropType: CropKey) {
   const recoverableTonnes = recoverableKg / 1000;
   // Calcule le revenu théorique au prix du marché courant.
   const marketRevenueEuros = recoverableTonnes * crop.marketPricePerTonne;
-  // Applique la prime Pure Graine par rapport au marché.
-  const pricePerTonnePureGraine = crop.marketPricePerTonne * (1 + crop.pureGrainePremiumPct / 100);
+  // Applique la prime Pure Grain par rapport au marché.
+  const pricePerTonnePureGrain = crop.marketPricePerTonne * (1 + crop.pureGrainPremiumPct / 100);
   // Calcule le revenu proposé par la plateforme.
-  const pureGraineRevenueEuros = recoverableTonnes * pricePerTonnePureGraine;
+  const pureGrainRevenueEuros = recoverableTonnes * pricePerTonnePureGrain;
   // Calcule le gain additionnel créé par la prime de revalorisation.
-  const bonusEuros = pureGraineRevenueEuros - marketRevenueEuros;
+  const bonusEuros = pureGrainRevenueEuros - marketRevenueEuros;
   // Calcule la quantité récupérable moyenne par hectare.
   const residuePerHa = recoverableKg / hectares;
 
   // Renvoie toutes les valeurs utiles au frontend sans exposer les tables de calcul.
   return {
     cropLabel: crop.label,
-    amount: pureGraineRevenueEuros,
+    amount: pureGrainRevenueEuros,
     residueTons: recoverableTonnes,
-    pricePerTon: pricePerTonnePureGraine,
+    pricePerTon: pricePerTonnePureGrain,
     marketRevenueEuros,
     bonusEuros,
-    bonusPct: crop.pureGrainePremiumPct,
+    bonusPct: crop.pureGrainPremiumPct,
     residuePerHa,
   };
 }

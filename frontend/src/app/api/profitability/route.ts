@@ -169,7 +169,7 @@ function getRecommendedBuyPrice(mode: ProfitabilityMode, key: AdminCropKey | Adm
       ? marketData.cultures[key as AdminCropKey]
       : marketData.fientes[key as AdminPoultryKey];
 
-  // Calcule le prix d'achat recommandé avec prime Pure Graine.
+  // Calcule le prix d'achat recommandé avec prime Pure Grain.
   const recommendedBuyPrice = data.marketPriceTonne * (1 + data.premiumPct / 100);
 
   // Renvoie les informations utiles au tableau de pilotage.

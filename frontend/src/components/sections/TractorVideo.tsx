@@ -16,8 +16,8 @@ export function TractorVideo() {
   return (
     <video
       ref={slowDownVideo}
-      src="/videos/tracteur.mp4"
-      aria-label="Visualisation agricole Pure Graine"
+      src="/videos/video_agri_qui_tchatch.webm"
+      aria-label="Visualisation agricole Pure Grain"
       autoPlay
       loop
       muted
