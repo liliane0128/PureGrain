@@ -1,0 +1,87 @@
+{
+  /* Options principales transmises au compilateur TypeScript. */
+  "compilerOptions": {
+    /* Version JavaScript cible générée par TypeScript. */
+    "target": "ES2020",
+    /* Utilise la sémantique moderne pour les champs de classes. */
+    "useDefineForClassFields": true,
+    /* Bibliothèques de types disponibles pendant la compilation. */
+    "lib": [
+      /* Types JavaScript ES2020. */
+      "ES2020",
+      /* Types du DOM pour le navigateur. */
+      "DOM",
+      /* Types des itérables du DOM. */
+      "DOM.Iterable"
+    ],
+    /* Laisse Next.js transformer le JSX au moment du build. */
+    "jsx": "preserve",
+    /* Format de modules moderne utilisé par le bundler. */
+    "module": "ESNext",
+    /* Ignore la vérification des fichiers de types externes pour accélérer la compilation. */
+    "skipLibCheck": true,
+    /* Permet les imports CommonJS via une syntaxe compatible ES modules. */
+    "esModuleInterop": true,
+    /* Autorise les imports par défaut synthétiques quand la librairie le permet. */
+    "allowSyntheticDefaultImports": true,
+    /* Bundler mode */
+    /* Résout les modules comme un bundler moderne plutôt que comme Node classique. */
+    "moduleResolution": "bundler",
+    /* Autorise l'import de fichiers TypeScript avec extension explicite. */
+    "allowImportingTsExtensions": true,
+    /* Autorise l'import direct de fichiers JSON typés. */
+    "resolveJsonModule": true,
+    /* Force chaque fichier à pouvoir être compilé isolément. */
+    "isolatedModules": true,
+    /* Empêche TypeScript de générer des fichiers de sortie. */
+    "noEmit": true,
+    /* Active le mode strict de TypeScript. */
+    "strict": true,
+    /* Signale les variables locales déclarées mais inutilisées. */
+    "noUnusedLocals": true,
+    /* Signale les paramètres de fonctions déclarés mais inutilisés. */
+    "noUnusedParameters": true,
+    /* Empêche les switch de continuer implicitement d'un case à l'autre. */
+    "noFallthroughCasesInSwitch": true,
+    /* Path mapping */
+    /* Racine utilisée pour résoudre les alias de chemins. */
+    "baseUrl": ".",
+    /* Alias d'import personnalisés. */
+    "paths": {
+      /* Permet d'écrire @/ pour viser le dossier src/. */
+      "@/*": [
+        /* Cible réelle de l'alias @/. */
+        "src/*"
+      ]
+    },
+    /* Next.js specific */
+    /* Active la compilation incrémentale pour accélérer les vérifications suivantes. */
+    "incremental": true,
+    /* Plugins TypeScript utilisés par l'éditeur et Next.js. */
+    "plugins": [
+      /* Plugin officiel Next.js pour améliorer les diagnostics TypeScript. */
+      {
+        /* Nom du plugin chargé par TypeScript. */
+        "name": "next"
+      }
+    ],
+    /* Autorise TypeScript à inclure des fichiers JavaScript dans le projet. */
+    "allowJs": true
+  },
+  /* Fichiers inclus dans le périmètre de vérification TypeScript. */
+  "include": [
+    /* Types générés par Next.js pour l'environnement global. */
+    "next-env.d.ts",
+    /* Tous les fichiers TypeScript du projet. */
+    "**/*.ts",
+    /* Tous les composants React TypeScript du projet. */
+    "**/*.tsx",
+    /* Types générés par Next.js dans le dossier .next. */
+    ".next/types/**/*.ts"
+  ],
+  /* Fichiers ou dossiers exclus de la vérification TypeScript. */
+  "exclude": [
+    /* Dépendances installées, déjà typées séparément. */
+    "node_modules"
+  ]
+}
