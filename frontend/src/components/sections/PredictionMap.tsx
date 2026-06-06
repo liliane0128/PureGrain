@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { SatelliteMap, type MapLocation } from './SatelliteMap';
+import { ImportCSV } from '@/components/ImportCSV';
 
 const fungalTargets = ['Fusarium graminearum', 'Fusarium culmorum', 'Fusarium verticillioides'];
 
@@ -454,6 +455,55 @@ export function PredictionMap() {
               >
                 Lancer la simulation
               </button>
+              {/* Import CSV component (re-added after pull overwrite) */}
+              <div style={{ marginTop: 12 }}>
+                <ImportCSV />
+              </div>
+
+              {/* Weather preview & save controls (moved inside left overlay so it's visible) */}
+              <div style={{ marginTop: 12 }}>
+                <h4 style={{ marginBottom: 8 }}>Météo & CSV</h4>
+                <div className="prediction-field-group">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => fetchWeather(false)}
+                    disabled={!selectedLocation || weatherLoading}
+                  >
+                    {weatherLoading ? "Chargement..." : "Prévisualiser la météo"}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => fetchWeather(true)}
+                    disabled={!selectedLocation || weatherLoading}
+                    style={{ marginLeft: 8 }}
+                  >
+                    {weatherLoading ? "En cours..." : "Confirmer et créer CSV"}
+                  </button>
+                </div>
+
+                {weatherError && <div className="text-red-600 mt-2">Erreur: {weatherError}</div>}
+
+                {weatherPreview && (
+                  <div className="mt-3 bg-white p-2 rounded shadow-sm">
+                    <div style={{ fontSize: 12, marginBottom: 6 }}>
+                      <strong>Aperçu météo</strong> — {weatherPreview.n_rows} jours
+                    </div>
+                    <div style={{ fontSize: 12 }}>
+                      <div>Temp moyenne (moy): {String(weatherPreview.aggregates.temperature_2m_mean)}</div>
+                      <div>Précipitations totales: {String(weatherPreview.aggregates.precipitation_sum)}</div>
+                      {weatherPreview.filename && (
+                        <div className="text-green-700">Fichier créé: {weatherPreview.filename}</div>
+                      )}
+                    </div>
+                    <details className="mt-2">
+                      <summary className="text-sm text-muted">Voir échantillon</summary>
+                      <pre className="text-xs mt-2 max-h-40 overflow-auto">{JSON.stringify(weatherPreview.sample, null, 2)}</pre>
+                    </details>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Weather preview & save controls */}
