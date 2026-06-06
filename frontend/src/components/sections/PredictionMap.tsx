@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react';
 import { CloudRain, Droplets, Gauge, Sun, Thermometer, Wind } from 'lucide-react';
 import { SatelliteMap, type MapLocation } from './SatelliteMap';
-import ImportCSV from '../ImportCSV';
 
 const fungalTargets = ['Fusarium graminearum', 'Fusarium culmorum', 'Fusarium verticillioides'];
 
@@ -328,8 +327,8 @@ function PredictionChart({ label, pill, legend, points, threshold, unit }: Chart
 
 
 export function PredictionMap() {
-  const [selectedFungus, setSelectedFungus] = useState(fungalTargets[0]);
-  const [selectedToxin, setSelectedToxin] = useState<ToxinLabel>(toxinTargets[0].label);
+  const [selectedFungus] = useState(fungalTargets[0]);
+  const [selectedToxin] = useState<ToxinLabel>(toxinTargets[0].label);
   const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
   const [weather, setWeather] = useState<WeatherInputs>(DEFAULT_WEATHER);
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -356,55 +355,22 @@ export function PredictionMap() {
   const handleLocationSelect = (location: MapLocation) => {
     setSelectedLocation(location);
     setHasSubmitted(false);
+    setPredictionResult(null);
   };
 
-  const [weatherPreview, setWeatherPreview] = useState<any | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [confirmLoading, setConfirmLoading] = useState(false);
-
-  const callWeather = async (confirm = false) => {
-    if (!selectedLocation) return;
-    const payload = { latitude: selectedLocation.lat, longitude: selectedLocation.lng, confirm } as any;
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
-    try {
-      if (confirm) setConfirmLoading(true);
-      else setPreviewLoading(true);
-      const res = await fetch(`${apiUrl}/api/v1/map/weather`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      let data: any;
-      const ct = res.headers.get('content-type') || '';
-      if (ct.includes('application/json')) {
-        try {
-          data = await res.json();
-        } catch (e) {
-          data = { detail: `Invalid JSON response: ${String(e)}` };
-        }
-      } else {
-        const text = await res.text();
-        data = { detail: text };
-      }
-
-      if (!res.ok) throw new Error(data?.detail ?? JSON.stringify(data));
-      setWeatherPreview(data.preview ?? data);
-    } catch (err: any) {
-      setWeatherPreview({ error: err.message ?? String(err) });
-    } finally {
-      setPreviewLoading(false);
-      setConfirmLoading(false);
-    }
-  };
+  const [predictionResult, setPredictionResult] = useState<{
+    contamination_probability: number;
+    accuracy: number;
+  } | null>(null);
 
   const launchSimulation = async () => {
     if (!selectedLocation) return;
     setIsLoading(true);
     setMlResult(null);
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
-    try {
-      const res = await fetch(`${apiUrl}/api/v1/predict/geo`, {
+
+    const [geoRes, weatherRes] = await Promise.allSettled([
+      fetch(`${apiUrl}/api/v1/predict/geo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -413,44 +379,61 @@ export function PredictionMap() {
           crop_group: selectedFungus === 'Fusarium verticillioides' ? 'maize' : 'wheat',
           sampling_point: 'Primary production',
         }),
+      }),
+      fetch(`${apiUrl}/api/v1/map/weather`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ latitude: selectedLocation.lat, longitude: selectedLocation.lng, confirm: true }),
+      }),
+    ]);
+
+    if (geoRes.status === 'fulfilled' && geoRes.value.ok) {
+      const data = await geoRes.value.json();
+      const w = data.weather as Record<string, number>;
+      setWeather({
+        temperature: Math.round(w.temperature_2m_mean ?? DEFAULT_WEATHER.temperature),
+        humidity: Math.round(w.relative_humidity_2m_mean ?? DEFAULT_WEATHER.humidity),
+        rainfall: Math.round(w.precipitation_sum ?? DEFAULT_WEATHER.rainfall),
+        wind: DEFAULT_WEATHER.wind,
+        sunshine: Math.round((1 - (w.cloud_cover_mean ?? 50) / 100) * 13),
+        pressure: DEFAULT_WEATHER.pressure,
       });
-      if (res.ok) {
-        const data = await res.json();
-        const w = data.weather as Record<string, number>;
-        setWeather({
-          temperature: Math.round(w.temperature_2m_mean ?? DEFAULT_WEATHER.temperature),
-          humidity: Math.round(w.relative_humidity_2m_mean ?? DEFAULT_WEATHER.humidity),
-          rainfall: Math.round(w.precipitation_sum ?? DEFAULT_WEATHER.rainfall),
-          wind: DEFAULT_WEATHER.wind,
-          sunshine: Math.round((1 - (w.cloud_cover_mean ?? 50) / 100) * 13),
-          pressure: DEFAULT_WEATHER.pressure,
-        });
-        setMlResult({
-          zenProbability: data.zen_probability,
-          riskLevel: (data.risk_level as string).toLowerCase() as RiskLevel,
-          rocAuc: data.model_roc_auc,
-          fromBackend: true,
-        });
-      } else {
-        setWeather(randomWeather());
-        setMlResult(null);
-      }
-    } catch {
+      setMlResult({
+        zenProbability: data.zen_probability,
+        riskLevel: (data.risk_level as string).toLowerCase() as RiskLevel,
+        rocAuc: data.model_roc_auc,
+        fromBackend: true,
+      });
+    } else {
       setWeather(randomWeather());
       setMlResult(null);
-    } finally {
-      setIsLoading(false);
-      setHasSubmitted(true);
-      requestAnimationFrame(() => {
-        document.getElementById('simulation-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
     }
+
+    if (weatherRes.status === 'fulfilled' && weatherRes.value.ok) {
+      const data = await weatherRes.value.json();
+      if (data.prediction) setPredictionResult(data.prediction);
+    }
+
+    setIsLoading(false);
+    setHasSubmitted(true);
+    requestAnimationFrame(() => {
+      document.getElementById('simulation-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   };
 
   const risk = prediction?.risk;
-  const displayLevel: RiskLevel = mlResult?.riskLevel ?? risk?.level ?? 'green';
+  const sensorLevel: RiskLevel | null = predictionResult
+    ? predictionResult.contamination_probability < 33 ? 'green'
+      : predictionResult.contamination_probability < 66 ? 'orange'
+      : 'red'
+    : null;
+  const displayLevel: RiskLevel = sensorLevel ?? mlResult?.riskLevel ?? risk?.level ?? 'green';
   const riskMeta = RISK_META[displayLevel];
-  const displayScore = mlResult ? mlResult.zenProbability : (risk?.score ?? 0);
+  const displayScore = predictionResult
+    ? predictionResult.contamination_probability / 100
+    : mlResult
+      ? mlResult.zenProbability
+      : (risk?.score ?? 0);
   const displayProbabilities: Record<RiskLevel, number> = mlResult
     ? {
         red: mlResult.zenProbability ** 2,
@@ -493,44 +476,6 @@ export function PredictionMap() {
             <div className="prediction-overlay-panel prediction-overlay-left">
               <h3 className="overlay-panel-title">Paramètres</h3>
 
-              <div className="prediction-field-group">
-                <label htmlFor="fungus-select">Champignon à prédire</label>
-                <select
-                  id="fungus-select"
-                  className="prediction-input-select"
-                  value={selectedFungus}
-                  onChange={(e) => {
-                    setSelectedFungus(e.target.value);
-                    setHasSubmitted(false);
-                  }}
-                >
-                  {fungalTargets.map((f) => (
-                    <option key={f} value={f}>
-                      {f}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="prediction-field-group">
-                <label htmlFor="toxin-select">Toxine à suivre</label>
-                <select
-                  id="toxin-select"
-                  className="prediction-input-select"
-                  value={selectedToxin}
-                  onChange={(e) => {
-                    setSelectedToxin(e.target.value as ToxinLabel);
-                    setHasSubmitted(false);
-                  }}
-                >
-                  {toxinTargets.map((t) => (
-                    <option key={t.label} value={t.label}>
-                      {t.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               <div className="prediction-location-info">
                 <span>Coordonnées de la parcelle</span>
                 <strong>
@@ -544,38 +489,6 @@ export function PredictionMap() {
                 </strong>
                 <small>Date d&apos;analyse: {today}</small>
               </div>
-
-              <ImportCSV />
-
-              {selectedLocation && (
-                <div style={{ marginTop: 10 }}>
-                  <label style={{ display: 'block', fontSize: 13, marginBottom: 6 }}>Générer la météo</label>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={() => callWeather(false)}
-                      disabled={previewLoading}
-                    >
-                      {previewLoading ? 'Prévisualisation...' : 'Prévisualiser la météo'}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={() => callWeather(true)}
-                      disabled={confirmLoading}
-                    >
-                      {confirmLoading ? 'Création...' : 'Confirmer et créer CSV'}
-                    </button>
-                  </div>
-
-                  {weatherPreview && (
-                    <pre style={{ maxHeight: 160, overflow: 'auto', background: '#0f172a', color: '#e6eef8', padding: 8 }}>
-                      {JSON.stringify(weatherPreview, null, 2)}
-                    </pre>
-                  )}
-                </div>
-              )}
 
               <button
                 type="button"
@@ -632,23 +545,54 @@ export function PredictionMap() {
                     )}
                   </div>
                   <div className="sim-risk-bars">
-                    {(['green', 'orange', 'red'] as const).map((key) => (
-                      <div className="sim-risk-bar" key={key}>
-                        <span className="sim-risk-bar-label">{RISK_META[key].label}</span>
-                        <span className="sim-risk-bar-track">
-                          <span
-                            className="sim-risk-bar-fill"
-                            style={{
-                              width: `${Math.round(displayProbabilities[key] * 100)}%`,
-                              background: RISK_META[key].color,
-                            }}
-                          />
-                        </span>
-                        <span className="sim-risk-bar-value">
-                          {Math.round(displayProbabilities[key] * 100)}%
-                        </span>
-                      </div>
-                    ))}
+                    {predictionResult ? (
+                      <>
+                        <div className="sim-risk-bar">
+                          <span className="sim-risk-bar-label">Probabilité de contamination</span>
+                          <span className="sim-risk-bar-track">
+                            <span
+                              className="sim-risk-bar-fill"
+                              style={{
+                                width: `${predictionResult.contamination_probability}%`,
+                                background: riskMeta.color,
+                              }}
+                            />
+                          </span>
+                          <span className="sim-risk-bar-value">{predictionResult.contamination_probability}%</span>
+                        </div>
+                        <div className="sim-risk-bar">
+                          <span className="sim-risk-bar-label">Précision du modèle</span>
+                          <span className="sim-risk-bar-track">
+                            <span
+                              className="sim-risk-bar-fill"
+                              style={{
+                                width: `${predictionResult.accuracy}%`,
+                                background: '#60a5fa',
+                              }}
+                            />
+                          </span>
+                          <span className="sim-risk-bar-value">{predictionResult.accuracy}%</span>
+                        </div>
+                      </>
+                    ) : (
+                      (['green', 'orange', 'red'] as const).map((key) => (
+                        <div className="sim-risk-bar" key={key}>
+                          <span className="sim-risk-bar-label">{RISK_META[key].label}</span>
+                          <span className="sim-risk-bar-track">
+                            <span
+                              className="sim-risk-bar-fill"
+                              style={{
+                                width: `${Math.round(displayProbabilities[key] * 100)}%`,
+                                background: RISK_META[key].color,
+                              }}
+                            />
+                          </span>
+                          <span className="sim-risk-bar-value">
+                            {Math.round(displayProbabilities[key] * 100)}%
+                          </span>
+                        </div>
+                      ))
+                    )}
                   </div>
                   <p className="sim-risk-reco">{displayStorageReco}</p>
                   <div className="sim-risk-factors">

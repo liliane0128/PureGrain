@@ -3,15 +3,12 @@
 import { useState } from 'react';
 
 export default function ImportCSV() {
-  const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
-  const upload = async () => {
-    if (!file) return setStatus('Choisissez un fichier');
+  const upload = async (file: File) => {
     setStatus('Envoi en cours...');
     const form = new FormData();
     form.append('file', file);
-
     try {
       const res = await fetch('/api/v1/imports/csv', { method: 'POST', body: form });
       const data = await res.json();
@@ -29,14 +26,12 @@ export default function ImportCSV() {
         aria-label="csv-file"
         type="file"
         accept=".csv"
-        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) upload(file);
+        }}
       />
-      <div style={{ marginTop: 8 }}>
-        <button type="button" onClick={upload} className="btn btn-primary" style={{ marginRight: 8 }}>
-          Envoyer
-        </button>
-        <small>{status}</small>
-      </div>
+      {status && <small style={{ display: 'block', marginTop: 6 }}>{status}</small>}
     </div>
   );
 }
