@@ -30,16 +30,16 @@ export function Features() {
         {/* Bandeau de spécifications horizontales style Tesla à la base du viewport */}
         <div className="features-specs-wrapper">
           <div className="features-spec-item">
+            <span className="features-spec-note">RÉSULTAT EN</span>
             <span className="features-spec-value">30 min</span>
-            <span className="features-spec-label">Résultat terrain</span>
           </div>
           <div className="features-spec-item">
-            <span className="features-spec-value">Tests répétés</span>
-            <span className="features-spec-label">Coût accessible</span>
+            <span className="features-spec-note">À PARTIR DE</span>
+            <span className="features-spec-value">3 € / unité</span>
           </div>
           <div className="features-spec-item">
-            <span className="features-spec-value">IA Europe</span>
-            <span className="features-spec-label">Données partagées</span>
+            <span className="features-spec-note">UNE IA POUR</span>
+            <span className="features-spec-value">les agriculteurs européens</span>
           </div>
         </div>
       </div>

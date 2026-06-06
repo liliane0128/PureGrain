@@ -3013,20 +3013,17 @@ img {
   margin-bottom: 0;
 }
 
+.hero-sub-title strong {
+  color: var(--color-white);
+  font-weight: 800;
+}
+
 .hero-footer-content {
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--spacing-lg);
-}
-
-.hero-body-description {
-  max-width: 680px;
-  color: rgba(255, 255, 255, 0.65);
-  font-size: var(--font-size-base);
-  line-height: 1.6;
-  margin-bottom: 0;
 }
 
 .hero-actions-group {
@@ -3169,13 +3166,14 @@ img {
   flex-direction: column;
   align-items: center;
   text-align: center;
+  max-width: 260px;
 }
 
 .features-spec-value {
-  font-size: clamp(1.8rem, 3.8vw, 2.8rem);
+  font-size: clamp(1.65rem, 3.4vw, 2.5rem);
   font-weight: 700;
   color: var(--color-white);
-  line-height: 1;
+  line-height: 1.08;
   margin-bottom: var(--spacing-xs);
   letter-spacing: -0.5px;
 }
@@ -3186,6 +3184,15 @@ img {
   color: rgba(255, 255, 255, 0.55);
   text-transform: uppercase;
   letter-spacing: 1.5px;
+  margin-bottom: 8px;
+}
+
+.features-spec-note {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.68);
+  line-height: 1.25;
+  margin-bottom: 4px;
 }
 
 /* Prediction Map Section */

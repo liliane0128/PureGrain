@@ -31,15 +31,12 @@ export function Hero() {
       <div className="hero-container">
         <div className="hero-header-text">
           <h1 className="hero-main-title">Du laboratoire au champ</h1>
-          <p className="hero-sub-title">Pure Grain teste, apprend et prédit.</p>
+          <p className="hero-sub-title">
+            Pure Grain <strong>teste, apprend et prédit.</strong>
+          </p>
         </div>
 
         <div className="hero-footer-content">
-          <p className="hero-body-description">
-            Faites des tests en direct sur vos parcelles, obtenez une lecture rapide de la
-            zéaralénone, puis transformez chaque mesure en donnée utile pour entraîner notre modèle
-            de prédiction agricole.
-          </p>
           <div className="hero-actions-group">
             <a className="btn btn-primary" href="#prediction-map">
               Lancer le simulateur
