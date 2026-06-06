@@ -1,8 +1,8 @@
-# Agent IA - Pure Graine
+# Agent IA - Pure Grain
 
 ## Vue d'ensemble
 
-Cet agent IA assiste le développement et la maintenance du site vitrine de **Pure Graine**, projet iGEM Sorbonne Université 2025-2026 consacré à la détection rapide de la zéaralénone (ZEN) dans les céréales.
+Cet agent IA assiste le développement et la maintenance du site vitrine de **Pure Grain**, projet iGEM Sorbonne Université 2025-2026 consacré à la détection rapide de la zéaralénone (ZEN) dans les céréales.
 
 Le projet présente trois pistes scientifiques :
 

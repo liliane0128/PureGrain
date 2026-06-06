@@ -3,36 +3,9 @@
 import Image from 'next/image';
 import { useInView } from '@/hooks/useInView';
 
-const advantages = [
-  {
-    metric: '× moins cher',
-    title: 'Coût divisé',
-    description:
-      'Une réaction sans cellule (TXTL) et des réactifs synthétiques remplacent les analyses laboratoire lourdes : le coût par test chute drastiquement.',
-  },
-  {
-    metric: '30 min',
-    title: 'Résultat immédiat',
-    description:
-      'Le signal fluorescent du toehold switch se lit directement, sans envoi d’échantillon ni attente de plusieurs jours.',
-  },
-  {
-    metric: 'Format terrain',
-    title: 'Mobile et simple',
-    description:
-      'Un kit léger utilisable au bord du champ : plus besoin d’équipement analytique fixe ni de personnel spécialisé.',
-  },
-  {
-    metric: 'Niveau labo',
-    title: 'Précision conservée',
-    description:
-      'L’aptamère Z0/Z1 reste spécifique à la zéaralénone : on gagne en accessibilité sans sacrifier la fiabilité de la mesure.',
-  },
-];
-
 /**
- * Section éditoriale présentant l'apport de la biologie de synthèse : un test
- * radicalement moins cher, plus rapide et mobile, tout en restant précis.
+ * Section éditoriale présentant le test de biologie synthétique comme source
+ * de données terrain pour le modèle prédictif.
  */
 export function SynBio() {
   const { ref, isInView } = useInView<HTMLElement>({ threshold: 0.2, once: true });
@@ -70,23 +43,20 @@ export function SynBio() {
         </div>
 
         <div className="synbio-copy">
-          <h2>Un test de laboratoire, repensé pour le terrain</h2>
+          <h2>Un test de biologie synthétique pour nourrir la prédiction</h2>
           <p className="synbio-lead">
-            Plutôt que d’envoyer les échantillons vers un laboratoire, Pure Graine embarque la
-            détection dans une réaction de biologie de synthèse. Résultat : un test{' '}
-            <strong>radicalement moins cher, plus rapide et mobile</strong>, qui garde la précision
-            d’une analyse classique.
+            Pure Grain développe un test basé sur la biologie synthétique pour mesurer la
+            contamination directement à partir d’échantillons de terrain. L’objectif n’est pas
+            seulement d’obtenir un résultat rapide : chaque test doit produire une donnée{' '}
+            <strong>fiable, précise et contextualisée</strong>, capable d’alimenter ensuite un
+            modèle de prédiction des contaminations.
           </p>
-
-          <div className="synbio-grid">
-            {advantages.map((item) => (
-              <article className="synbio-card" key={item.title}>
-                <strong className="synbio-card-metric">{item.metric}</strong>
-                <h3>{item.title}</h3>
-                <p>{item.description}</p>
-              </article>
-            ))}
-          </div>
+          <p className="synbio-lead">
+            En reliant les résultats biologiques aux conditions agronomiques et météorologiques,
+            nous pourrons mieux anticiper les zones et les périodes à risque. Cette approche vise à
+            réduire les pertes pour les agriculteurs, tout en limitant les risques sanitaires pour
+            les consommateurs.
+          </p>
         </div>
       </div>
     </section>

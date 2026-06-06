@@ -2,7 +2,6 @@ import Image from 'next/image';
 import { Header } from '@/components/sections/Header';
 import { ScrollReveal } from '@/components/ScrollReveal';
 import { Hero } from '@/components/sections/Hero';
-import { Partners } from '@/components/sections/Partners';
 import { Features } from '@/components/sections/Features';
 import { SynBio } from '@/components/sections/SynBio';
 import { PredictionMap } from '@/components/sections/PredictionMap';
@@ -21,58 +20,45 @@ export default function Home() {
         {/* Section 1: Hero avec vidéo de démonstration plein écran */}
         <Hero />
 
-        {/* Section 2: Projet & affiliations (biologie de synthèse, logos) */}
-        <Partners />
-
-        {/* Section 3: Apport de la biologie de synthèse (coût, rapidité, mobilité) */}
+        {/* Section 2: Apport de la biologie de synthèse (coût, rapidité, mobilité) */}
         <SynBio />
 
-        {/* Section 4: Analyse terrain et métriques clés */}
+        {/* Section 3: Analyse terrain et métriques clés */}
         <Features />
 
-        {/* Section 5: Simulateur interactif de prédiction (carte + résultats) */}
+        {/* Section 4: Simulateur interactif de prédiction (carte + résultats) */}
         <PredictionMap />
       </main>
 
-      {/* Section 6: Pied de page institutionnel minimalist */}
+      {/* Section 5: Pied de page institutionnel minimalist */}
       <footer className="site-footer">
         <div className="container site-footer-content">
-          <p>
-            Pure Graine © 2026 · Projet développé pour le{' '}
-            <a
-              href="https://www.universite-paris-saclay.fr/evenements/hackathon-youthforbioeconomy-2026"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Hackathon #YouthForBioeconomy
-            </a>
-          </p>
           <div className="site-footer-logos">
-            <a href="https://www.universite-paris-saclay.fr" target="_blank" rel="noreferrer" title="Université Paris-Saclay">
+            <a href="https://igem.org" target="_blank" rel="noreferrer" title="iGEM">
               <Image
-                src="/images/Logo_Université_Paris-Saclay_2019-12.svg.png"
-                alt="Université Paris-Saclay"
-                width={120}
-                height={42}
-                className="site-footer-logo site-footer-logo-saclay"
+                src="/images/IGEM_logo_2500x2500.png"
+                alt="iGEM"
+                width={2500}
+                height={2500}
+                className="site-footer-logo site-footer-logo-igem"
               />
             </a>
-            <a href="https://www.agroparistech.fr" target="_blank" rel="noreferrer" title="AgroParisTech">
+            <a href="https://www.linkedin.com/company/igem-sorbonne/posts/?feedView=all" target="_blank" rel="noreferrer" title="iGEM Sorbonne Université">
               <Image
-                src="/images/APT_Logo_RVB_Positif.png"
-                alt="AgroParisTech"
-                width={110}
-                height={30}
-                className="site-footer-logo site-footer-logo-apt"
+                src="/images/igem_SU.png"
+                alt="iGEM Sorbonne Université"
+                width={1024}
+                height={1024}
+                className="site-footer-logo site-footer-logo-su"
               />
             </a>
-            <a href="https://agpb.fr" target="_blank" rel="noreferrer" title="AGPB">
+            <a href="https://www.genopole.fr/offres/d4gen-hackathon/" target="_blank" rel="noreferrer" title="D4Gen Hackathon Genopole">
               <Image
-                src="/images/logo_agpb.png"
-                alt="AGPB"
-                width={40}
-                height={40}
-                className="site-footer-logo site-footer-logo-agpb"
+                src="/images/Hackaton.png"
+                alt="D4Gen Hackathon Genopole"
+                width={475}
+                height={367}
+                className="site-footer-logo site-footer-logo-hackathon"
               />
             </a>
           </div>

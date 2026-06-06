@@ -23,7 +23,7 @@ export function Features() {
         <div className="features-header-text">
           <h2 className="features-main-title">Analyser son champ en direct</h2>
           <p className="features-sub-title">
-            Pure Graine rapproche l’analyse du terrain : un prélèvement rapide, une lecture simple et un résultat exploitable en 30 minutes pour repérer la zéaralénone.
+            Pure Grain rapproche l’analyse du terrain : un prélèvement rapide, une lecture simple et un résultat exploitable en 30 minutes pour repérer la zéaralénone.
           </p>
         </div>
 

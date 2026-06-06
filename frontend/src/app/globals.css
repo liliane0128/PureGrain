@@ -250,6 +250,7 @@ img {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-sm);
+  transform: translate(-12px, 8px);
   color: var(--color-white);
   font-weight: 700;
   font-size: var(--font-size-base);
@@ -263,22 +264,17 @@ img {
 }
 
 .site-brand-mark {
-  width: 36px;
-  height: 36px;
+  width: 68.5584px;
+  height: 68.5584px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--border-radius-md);
-  background: rgba(255, 255, 255, 0.1);
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .site-brand-logo {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  padding: 4px;
 }
 
 .site-nav {
@@ -2251,8 +2247,23 @@ img {
   display: inline-flex;
   /* Centre les images dans leur zone de lien. */
   align-items: center;
+  justify-content: center;
+  width: 106px;
+  height: 106px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 999px;
   /* Garde une transition douce au survol. */
-  transition: opacity var(--transition-base) ease;
+  transition:
+    opacity var(--transition-base) ease,
+    transform var(--transition-base) ease,
+    background var(--transition-base) ease;
+}
+
+.site-footer-logos a:nth-child(3) {
+  width: 164px;
+  height: 112px;
+  padding: 12px 18px;
 }
 
 .site-footer-logos a:hover {
@@ -2267,27 +2278,22 @@ img {
   object-fit: contain;
 }
 
-.site-footer-logo-saclay {
-  /* Définit une largeur responsive avec une limite maximale pour Paris-Saclay. */
-  width: min(192px, 30vw);
-  /* Empêche le logo horizontal de devenir trop haut. */
-  max-height: 62px;
-  /* Remonte légèrement Paris-Saclay pour l'aligner optiquement avec les autres logos. */
-  transform: translateY(-3px);
+.site-footer-logo-igem {
+  width: 78px;
+  max-width: 100%;
+  max-height: 78px;
 }
 
-.site-footer-logo-apt {
-  /* Définit une largeur responsive avec une limite maximale pour AgroParisTech. */
-  width: min(220px, 34vw);
-  /* Empêche le logo horizontal de devenir trop haut. */
-  max-height: 66px;
+.site-footer-logo-su {
+  width: 78px;
+  max-width: 100%;
+  max-height: 78px;
 }
 
-.site-footer-logo-agpb {
-  /* Définit une taille compacte pour le logo AGPB, qui est presque carré. */
-  width: 76px;
-  /* Empêche le logo carré de dominer le footer. */
-  max-height: 76px;
+.site-footer-logo-hackathon {
+  width: 136px;
+  max-width: 100%;
+  max-height: 88px;
 }
 
 .cta-stats {
@@ -2312,7 +2318,7 @@ img {
   font-size: var(--font-size-sm);
 }
 
-/* PURE GRAINE DARK THEME */
+/* PURE GRAIN DARK THEME */
 .hero-video-section {
   /* La vidéo devient une section éditoriale, pas un plein écran d'ouverture. */
   position: relative;
@@ -2780,25 +2786,35 @@ img {
   .site-footer-logos {
     /* Aligne les logos à gauche sous le texte sur mobile. */
     justify-content: flex-start;
-    /* Conserve les trois logos sur une seule ligne sur mobile. */
-    flex-wrap: nowrap;
+    /* Laisse respirer les bulles si l'écran est trop étroit. */
+    flex-wrap: wrap;
     /* Réduit l'écart pour que les trois logos tiennent mieux. */
     gap: var(--spacing-md);
   }
 
-  .site-footer-logo-saclay {
-    /* Limite le logo Paris-Saclay à la largeur disponible sur mobile. */
-    width: min(116px, 27vw);
+  .site-footer-logos a {
+    width: 78px;
+    height: 78px;
+    padding: 10px;
   }
 
-  .site-footer-logo-apt {
-    /* Limite le logo AgroParisTech à la largeur disponible sur mobile. */
-    width: min(132px, 31vw);
+  .site-footer-logos a:nth-child(3) {
+    width: 126px;
+    height: 84px;
+    padding: 10px 14px;
   }
 
-  .site-footer-logo-agpb {
-    /* Réduit légèrement le logo AGPB sur mobile. */
-    width: min(52px, 14vw);
+  .site-footer-logo-igem {
+    width: 56px;
+  }
+
+  .site-footer-logo-su {
+    width: 56px;
+  }
+
+  .site-footer-logo-hackathon {
+    width: 104px;
+    max-height: 64px;
   }
 
   .features-animation {
@@ -3878,16 +3894,19 @@ img {
 .site-footer {
   background: #000000 !important;
   border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
-  padding: 40px var(--spacing-xl);
+  padding: 72px var(--spacing-xl);
   box-sizing: border-box;
+  min-height: 300px;
+  scroll-snap-align: end;
+  scroll-snap-stop: always;
 }
 
 .site-footer-content {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-xl);
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
@@ -3895,7 +3914,7 @@ img {
 
 .site-footer-content p {
   color: var(--color-gray-500);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   margin-bottom: 0;
   text-align: left;
 }
@@ -3912,15 +3931,37 @@ img {
 .site-footer-logos {
   display: flex;
   align-items: center;
-  gap: var(--spacing-lg);
-  filter: grayscale(1);
-  opacity: 0.48;
+  gap: 34px;
+  filter: grayscale(0);
+  opacity: 0.96;
   transition: all 0.3s ease;
 }
 
 .site-footer-logos:hover {
   filter: grayscale(0);
-  opacity: 0.85;
+  opacity: 1;
+}
+
+.site-footer-logos a {
+  width: 132px;
+  height: 132px;
+  padding: 14px;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.site-footer-logos a:nth-child(3) {
+  width: 132px;
+  height: 132px;
+  padding: 0;
+  border-radius: 999px;
+}
+
+.site-footer-logos a:hover {
+  opacity: 1;
+  transform: translateY(-2px);
 }
 
 .site-footer-logo {
@@ -3928,8 +3969,61 @@ img {
   object-fit: contain;
 }
 
+.site-footer-logo-igem,
+.site-footer-logo-su {
+  width: 104px;
+  max-width: 100%;
+  max-height: 104px;
+}
+
+.site-footer-logo-hackathon {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: cover;
+}
+
 .site-footer-logo:hover {
   transform: scale(1.05);
+}
+
+@media (max-width: 700px) {
+  .site-footer {
+    padding: 56px var(--spacing-lg);
+    min-height: 340px;
+    scroll-snap-align: end;
+  }
+
+  .site-footer-logos {
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+  }
+
+  .site-footer-logos a {
+    width: 92px;
+    height: 92px;
+    padding: 10px;
+  }
+
+  .site-footer-logos a:nth-child(3) {
+    width: 92px;
+    height: 92px;
+    padding: 0;
+    border-radius: 999px;
+  }
+
+  .site-footer-logo-igem,
+  .site-footer-logo-su {
+    width: 72px;
+    max-height: 72px;
+  }
+
+  .site-footer-logo-hackathon {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+  }
 }
 
 /* General Utilities & Badges */
@@ -4032,57 +4126,16 @@ img {
   font-size: var(--font-size-lg);
   line-height: 1.7;
   max-width: 620px;
+  margin-bottom: var(--spacing-md);
+}
+
+.synbio-lead:last-of-type {
   margin-bottom: var(--spacing-xl);
 }
 
 .synbio-lead strong {
   color: var(--color-white);
   font-weight: 600;
-}
-
-.synbio-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-md);
-}
-
-.synbio-card {
-  background: var(--surface-glass);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: var(--border-radius-lg);
-  padding: var(--spacing-lg);
-  transition:
-    border-color 0.3s ease,
-    background 0.3s ease,
-    transform 0.3s ease;
-}
-
-.synbio-card:hover {
-  border-color: rgba(52, 211, 153, 0.35);
-  background: var(--surface-glass-strong);
-  transform: translateY(-3px);
-}
-
-.synbio-card-metric {
-  display: block;
-  color: var(--color-accent);
-  font-size: var(--font-size-xl);
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  margin-bottom: 4px;
-}
-
-.synbio-card h3 {
-  font-size: var(--font-size-base);
-  color: var(--color-white);
-  margin-bottom: 6px;
-}
-
-.synbio-card p {
-  font-size: var(--font-size-sm);
-  color: var(--color-gray-500);
-  line-height: 1.55;
-  margin-bottom: 0;
 }
 
 /* Apparition douce des deux colonnes à l'entrée dans le viewport. */
@@ -4407,6 +4460,33 @@ img {
   font-size: var(--font-size-xs);
   color: var(--color-gray-500);
   font-variant-numeric: tabular-nums;
+}
+
+.sim-contamination-card {
+  min-height: 100%;
+  justify-content: center;
+}
+
+.sim-contamination-value {
+  display: block;
+  font-size: clamp(4.5rem, 10vw, 8rem);
+  line-height: 0.9;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.sim-contamination-meter {
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.sim-contamination-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.4s ease;
 }
 
 .sim-risk-bars {

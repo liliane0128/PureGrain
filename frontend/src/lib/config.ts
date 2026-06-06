@@ -1,7 +1,7 @@
 import type { NavItem } from '@/types';
 
 export const siteConfig = {
-  name: 'Pure Graine',
+  name: 'Pure Grain',
 };
 
 export const navigation: NavItem[] = [
