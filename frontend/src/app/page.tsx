@@ -48,31 +48,36 @@ export default function Home() {
             </a>
           </p>
           <div className="site-footer-logos">
-            <a href="https://www.universite-paris-saclay.fr" target="_blank" rel="noreferrer" title="Université Paris-Saclay">
+            <a href="https://igem.org" target="_blank" rel="noreferrer" title="iGEM">
               <Image
-                src="/images/Logo_Université_Paris-Saclay_2019-12.svg.png"
-                alt="Université Paris-Saclay"
-                width={120}
-                height={42}
-                className="site-footer-logo site-footer-logo-saclay"
+                src="/images/IGEM_logo_2500x2500.png"
+                alt="iGEM"
+                width={96}
+                height={96}
+                className="site-footer-logo"
               />
             </a>
-            <a href="https://www.agroparistech.fr" target="_blank" rel="noreferrer" title="AgroParisTech">
+            <a
+              href="https://www.linkedin.com/company/igem-sorbonne/posts/?feedView=all"
+              target="_blank"
+              rel="noreferrer"
+              title="iGEM Sorbonne Université"
+            >
               <Image
-                src="/images/APT_Logo_RVB_Positif.png"
-                alt="AgroParisTech"
-                width={110}
-                height={30}
-                className="site-footer-logo site-footer-logo-apt"
+                src="/images/igem .png"
+                alt="iGEM Sorbonne Université"
+                width={96}
+                height={96}
+                className="site-footer-logo"
               />
             </a>
-            <a href="https://agpb.fr" target="_blank" rel="noreferrer" title="AGPB">
+            <a href="#top" title="Pure Graine">
               <Image
-                src="/images/logo_agpb.png"
-                alt="AGPB"
-                width={40}
-                height={40}
-                className="site-footer-logo site-footer-logo-agpb"
+                src="/images/logo projet.png"
+                alt="Pure Graine"
+                width={96}
+                height={96}
+                className="site-footer-logo"
               />
             </a>
           </div>

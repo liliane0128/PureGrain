@@ -2,7 +2,7 @@
 
 const HERO_VIDEO_WEBM = '/videos/hero.webm';
 const HERO_VIDEO_MP4 = '/videos/hero.mp4';
-const HERO_VIDEO_POSTER = '/images/hero_poster.jpg';
+const HERO_VIDEO_POSTER = '/images/leon-mcgregor-Zk3ZUpzSp8c-unsplash.jpg';
 
 /**
  * Section d'accueil immersive : texte de marque et appels à l'action posés sur

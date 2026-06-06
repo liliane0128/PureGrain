@@ -1410,8 +1410,7 @@ img {
 /* BIO CONVERSION SECTION */
 .bio-conversion {
   /* Utilise l'image fournie comme fond immersif de la troisième section. */
-  /* TODO: remplacer ynsect.jpg par une image libre de droit avant une diffusion publique. */
-  background-image: url('/images/ynsect.jpg');
+  background-image: url('/images/leon-mcgregor-Zk3ZUpzSp8c-unsplash.jpg');
   /* Recadre l'image pour couvrir toute la largeur sans laisser de vide. */
   background-size: cover;
   /* Place le sujet de l'image au centre de la section. */
@@ -2261,33 +2260,14 @@ img {
 }
 
 .site-footer-logo {
+  /* Donne une taille homogène aux logos carrés du footer. */
+  width: min(96px, 22vw);
   /* Préserve le ratio original du logo. */
   height: auto;
   /* Ajuste le logo dans son cadre sans le déformer. */
   object-fit: contain;
-}
-
-.site-footer-logo-saclay {
-  /* Définit une largeur responsive avec une limite maximale pour Paris-Saclay. */
-  width: min(192px, 30vw);
-  /* Empêche le logo horizontal de devenir trop haut. */
-  max-height: 62px;
-  /* Remonte légèrement Paris-Saclay pour l'aligner optiquement avec les autres logos. */
-  transform: translateY(-3px);
-}
-
-.site-footer-logo-apt {
-  /* Définit une largeur responsive avec une limite maximale pour AgroParisTech. */
-  width: min(220px, 34vw);
-  /* Empêche le logo horizontal de devenir trop haut. */
-  max-height: 66px;
-}
-
-.site-footer-logo-agpb {
-  /* Définit une taille compacte pour le logo AGPB, qui est presque carré. */
-  width: 76px;
-  /* Empêche le logo carré de dominer le footer. */
-  max-height: 76px;
+  /* Evite qu'un logo dépasse visuellement le footer. */
+  max-height: 96px;
 }
 
 .cta-stats {
@@ -2786,19 +2766,10 @@ img {
     gap: var(--spacing-md);
   }
 
-  .site-footer-logo-saclay {
-    /* Limite le logo Paris-Saclay à la largeur disponible sur mobile. */
-    width: min(116px, 27vw);
-  }
-
-  .site-footer-logo-apt {
-    /* Limite le logo AgroParisTech à la largeur disponible sur mobile. */
-    width: min(132px, 31vw);
-  }
-
-  .site-footer-logo-agpb {
-    /* Réduit légèrement le logo AGPB sur mobile. */
-    width: min(52px, 14vw);
+  .site-footer-logo {
+    /* Réduit légèrement les logos du footer sur mobile. */
+    width: min(68px, 20vw);
+    max-height: 68px;
   }
 
   .features-animation {

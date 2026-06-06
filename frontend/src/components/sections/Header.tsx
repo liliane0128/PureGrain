@@ -47,10 +47,10 @@ export function Header() {
         <a className="site-brand" href="#top">
           <span className="site-brand-mark" aria-hidden="true">
             <Image
-              src="/images/pure-graine-logo.png"
+              src="/images/logo projet.png"
               alt=""
-              width={1047}
-              height={1050}
+              width={1024}
+              height={1024}
               className="site-brand-logo"
               priority
             />
