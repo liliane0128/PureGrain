@@ -36,10 +36,10 @@ export default function Home() {
           <div className="site-footer-logos">
             <a href="https://igem.org" target="_blank" rel="noreferrer" title="iGEM">
               <Image
-                src="/images/IGEM_logo_2500x2500.png"
+                src="/images/igem-logo.webp"
                 alt="iGEM"
-                width={96}
-                height={96}
+                width={512}
+                height={512}
                 className="site-footer-logo"
               />
             </a>
@@ -50,10 +50,10 @@ export default function Home() {
               title="iGEM Sorbonne Université"
             >
               <Image
-                src="/images/igem .png"
+                src="/images/igem-su.webp"
                 alt="iGEM Sorbonne Université"
-                width={96}
-                height={96}
+                width={512}
+                height={512}
                 className="site-footer-logo"
               />
             </a>
@@ -64,10 +64,10 @@ export default function Home() {
               title="D4GEN Hackathon"
             >
               <Image
-                src="/images/hackathon.png"
+                src="/images/hackathon.webp"
                 alt="D4GEN Hackathon"
-                width={96}
-                height={96}
+                width={475}
+                height={367}
                 className="site-footer-logo site-footer-logo-hackathon"
               />
             </a>

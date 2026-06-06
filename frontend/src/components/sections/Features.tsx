@@ -1,17 +1,17 @@
 'use client';
 
-import { TractorVideo } from './TractorVideo';
+import { SiloVideo } from './SiloVideo';
 
 /**
  * Composant Features - Présentation immersive style Tesla de l'analyse terrain
- * Affiche l'accroche et les indicateurs clés au-dessus de la vidéo du tracteur ralentie.
+ * Affiche l'accroche et les indicateurs clés au-dessus de la vidéo de silo ralentie.
  */
 export function Features() {
   return (
     <section id="benefits" className="features-section">
-      {/* Vidéo de fond du tracteur */}
+      {/* Vidéo de fond du silo */}
       <div className="features-bg-video-wrapper">
-        <TractorVideo />
+        <SiloVideo />
       </div>
 
       {/* Voile d'ombrage */}

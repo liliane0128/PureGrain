@@ -47,10 +47,10 @@ export function Header() {
         <a className="site-brand" href="#top">
           <span className="site-brand-mark" aria-hidden="true">
             <Image
-              src="/images/logo projet.png"
+              src="/images/pure-grain-logo.webp"
               alt=""
-              width={1024}
-              height={1024}
+              width={512}
+              height={512}
               className="site-brand-logo"
               priority
             />

@@ -20,20 +20,20 @@ export function SynBio() {
         <div className="synbio-visual">
           <div className="synbio-frame">
             <Image
-              src="/images/leon-mcgregor-Zk3ZUpzSp8c-unsplash.jpg"
+              src="/images/field.webp"
               alt="Champ de céréales, support de collecte des échantillons agricoles"
-              width={1200}
-              height={768}
+              width={1920}
+              height={1293}
               className="synbio-image"
               sizes="(max-width: 900px) 90vw, 45vw"
             />
           </div>
           <div className="synbio-frame">
             <Image
-              src="/images/toehold-switch.avif"
+              src="/images/toehold-switch.webp"
               alt="Rendu 3D d'un toehold switch : brin d'ARN guidé vers le ribosome pour déclencher l'expression du reporter fluorescent"
-              width={1200}
-              height={720}
+              width={1600}
+              height={900}
               className="synbio-image"
               sizes="(max-width: 900px) 90vw, 45vw"
             />

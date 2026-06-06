@@ -1410,7 +1410,7 @@ img {
 /* BIO CONVERSION SECTION */
 .bio-conversion {
   /* Utilise l'image fournie comme fond immersif de la troisième section. */
-  background-image: url('/images/leon-mcgregor-Zk3ZUpzSp8c-unsplash.jpg');
+  background-image: url('/images/field.webp');
   /* Recadre l'image pour couvrir toute la largeur sans laisser de vide. */
   background-size: cover;
   /* Place le sujet de l'image au centre de la section. */
@@ -2362,7 +2362,7 @@ img {
       rgba(8, 8, 10, 0.22) 52%,
       rgba(8, 8, 10, 0.42) 100%
     ),
-    url('/images/leon-mcgregor-Zk3ZUpzSp8c-unsplash.jpg');
+    url('/images/field.webp');
   background-size: cover;
   background-position: center;
 }
