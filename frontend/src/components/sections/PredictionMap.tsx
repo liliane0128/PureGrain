@@ -332,6 +332,13 @@ export function PredictionMap() {
   const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
   const [weather, setWeather] = useState<WeatherInputs>(DEFAULT_WEATHER);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [mlResult, setMlResult] = useState<{
+    zenProbability: number;
+    riskLevel: RiskLevel;
+    rocAuc: number;
+    fromBackend: boolean;
+  } | null>(null);
   const currentDate = useMemo(() => new Date(), []);
   const today = useMemo(() => formatDate(currentDate), [currentDate]);
 
@@ -350,17 +357,72 @@ export function PredictionMap() {
     setHasSubmitted(false);
   };
 
-  const launchSimulation = () => {
-    // Relevé météo simulé tiré au lancement (placeholder avant connexion backend).
-    setWeather(randomWeather());
-    setHasSubmitted(true);
-    requestAnimationFrame(() => {
-      document.getElementById('simulation-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+  const launchSimulation = async () => {
+    if (!selectedLocation) return;
+    setIsLoading(true);
+    setMlResult(null);
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+    try {
+      const res = await fetch(`${apiUrl}/api/v1/predict/geo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lat: selectedLocation.lat,
+          lon: selectedLocation.lng,
+          crop_group: selectedFungus === 'Fusarium verticillioides' ? 'maize' : 'wheat',
+          sampling_point: 'Primary production',
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const w = data.weather as Record<string, number>;
+        setWeather({
+          temperature: Math.round(w.temperature_2m_mean ?? DEFAULT_WEATHER.temperature),
+          humidity: Math.round(w.relative_humidity_2m_mean ?? DEFAULT_WEATHER.humidity),
+          rainfall: Math.round(w.precipitation_sum ?? DEFAULT_WEATHER.rainfall),
+          wind: DEFAULT_WEATHER.wind,
+          sunshine: Math.round((1 - (w.cloud_cover_mean ?? 50) / 100) * 13),
+          pressure: DEFAULT_WEATHER.pressure,
+        });
+        setMlResult({
+          zenProbability: data.zen_probability,
+          riskLevel: (data.risk_level as string).toLowerCase() as RiskLevel,
+          rocAuc: data.model_roc_auc,
+          fromBackend: true,
+        });
+      } else {
+        setWeather(randomWeather());
+        setMlResult(null);
+      }
+    } catch {
+      setWeather(randomWeather());
+      setMlResult(null);
+    } finally {
+      setIsLoading(false);
+      setHasSubmitted(true);
+      requestAnimationFrame(() => {
+        document.getElementById('simulation-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
   };
 
   const risk = prediction?.risk;
-  const riskMeta = risk ? RISK_META[risk.level] : null;
+  const displayLevel: RiskLevel = mlResult?.riskLevel ?? risk?.level ?? 'green';
+  const riskMeta = RISK_META[displayLevel];
+  const displayScore = mlResult ? mlResult.zenProbability : (risk?.score ?? 0);
+  const displayProbabilities: Record<RiskLevel, number> = mlResult
+    ? {
+        red: mlResult.zenProbability ** 2,
+        orange: 2 * mlResult.zenProbability * (1 - mlResult.zenProbability),
+        green: (1 - mlResult.zenProbability) ** 2,
+      }
+    : risk?.probabilities ?? { green: 1, orange: 0, red: 0 };
+  const displayStorageReco =
+    displayLevel === 'red'
+      ? 'Séchage immédiat ou tri du lot avant tout stockage'
+      : displayLevel === 'orange'
+        ? 'Ventilation renforcée et nouveau contrôle sous 7 jours'
+        : 'Stockage standard, surveillance légère suffisante';
 
   const weatherCards = [
     { key: 'temp', Icon: Thermometer, value: weather.temperature, unit: ' °C', label: 'Température', color: '#f5b34d' },
@@ -445,10 +507,10 @@ export function PredictionMap() {
               <button
                 type="button"
                 className="prediction-action-btn"
-                disabled={!selectedLocation}
+                disabled={!selectedLocation || isLoading}
                 onClick={launchSimulation}
               >
-                Lancer la simulation
+                {isLoading ? 'Analyse en cours…' : 'Lancer la simulation'}
               </button>
             </div>
           </div>
@@ -462,11 +524,13 @@ export function PredictionMap() {
             <h2>Météo, risque et trajectoire de contamination</h2>
           </header>
 
-          {hasSubmitted && prediction && risk && riskMeta ? (
+          {hasSubmitted && prediction ? (
             <div className="sim-results-grid">
               <aside className="sim-weather-panel">
                 <h3 className="sim-panel-title">Conditions météo</h3>
-                <p className="sim-panel-hint">Relevé de la parcelle (données simulées).</p>
+                <p className="sim-panel-hint">
+                  {mlResult?.fromBackend ? 'Données Open-Meteo temps réel.' : 'Données simulées (backend indisponible).'}
+                </p>
                 <div className="sim-weather-grid">
                   {weatherCards.map(({ key, Icon, value, unit, label, color }) => (
                     <div className="sim-weather-card" key={key}>
@@ -489,7 +553,10 @@ export function PredictionMap() {
                   <div className="sim-risk-head">
                     <span className="sim-risk-dot" style={{ background: riskMeta.color }} />
                     <strong style={{ color: riskMeta.color }}>{riskMeta.label}</strong>
-                    <span className="sim-risk-score">score {Math.round(risk.score * 100)}/100</span>
+                    <span className="sim-risk-score">score {Math.round(displayScore * 100)}/100</span>
+                    {mlResult?.fromBackend && (
+                      <span className="sim-risk-ml-badge">ML · ROC-AUC {mlResult.rocAuc}</span>
+                    )}
                   </div>
                   <div className="sim-risk-bars">
                     {(['green', 'orange', 'red'] as const).map((key) => (
@@ -499,20 +566,20 @@ export function PredictionMap() {
                           <span
                             className="sim-risk-bar-fill"
                             style={{
-                              width: `${Math.round(risk.probabilities[key] * 100)}%`,
+                              width: `${Math.round(displayProbabilities[key] * 100)}%`,
                               background: RISK_META[key].color,
                             }}
                           />
                         </span>
                         <span className="sim-risk-bar-value">
-                          {Math.round(risk.probabilities[key] * 100)}%
+                          {Math.round(displayProbabilities[key] * 100)}%
                         </span>
                       </div>
                     ))}
                   </div>
-                  <p className="sim-risk-reco">{risk.storageRecommendation}</p>
+                  <p className="sim-risk-reco">{displayStorageReco}</p>
                   <div className="sim-risk-factors">
-                    {risk.topFactors.map((factor) => (
+                    {risk?.topFactors.map((factor) => (
                       <span className="sim-factor-chip" key={factor}>
                         {factor}
                       </span>
