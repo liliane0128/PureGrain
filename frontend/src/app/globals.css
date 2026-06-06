@@ -1259,6 +1259,22 @@ img {
   z-index: 0;
 }
 
+/* Couche des noms de villes (tuiles transparentes) au-dessus du satellite. */
+.satellite-map-label-layer {
+  z-index: 2;
+}
+
+.satellite-map-label-tile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 256px;
+  height: 256px;
+  transform-origin: top left;
+  will-change: transform;
+  pointer-events: none;
+}
+
 .satellite-map-tile {
   position: absolute;
   top: 0;
@@ -2927,9 +2943,11 @@ img {
 }
 
 .hero-section,
+.partners-section,
 .features-section,
 .synbio-section,
 .prediction-dashboard-section,
+.simulation-results-section,
 .bio-conversion,
 .molecules {
   height: 100vh;
@@ -4069,6 +4087,404 @@ img {
   }
 }
 
+/* PARTNERS / PROJECT SECTION */
+.partners-section {
+  background: #0a0a0c;
+  text-align: center;
+}
+
+/* Fond champ de blé fortement flouté + assombri : couleur blés mais discrète,
+   juste assez pour distinguer cette section du hero. */
+.partners-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: url('/images/leon-mcgregor-Zk3ZUpzSp8c-unsplash.jpg');
+  background-size: cover;
+  background-position: center;
+  filter: blur(30px) saturate(0.72) brightness(0.72);
+  transform: scale(1.18); /* évite les bords transparents dus au flou */
+  pointer-events: none;
+}
+
+/* Voile sombre par-dessus le fond flou : laisse transparaître la couleur blés
+   tout en gardant le texte lisible et le ton sobre. Fondu sombre haut/bas pour
+   raccorder avec les sections voisines. */
+.partners-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(75% 65% at 50% 48%, rgba(10, 10, 12, 0.18), rgba(10, 10, 12, 0.5) 100%),
+    linear-gradient(180deg, rgba(10, 10, 12, 0.92) 0%, rgba(10, 10, 12, 0.3) 26%, rgba(10, 10, 12, 0.3) 74%, rgba(10, 10, 12, 0.92) 100%);
+}
+
+.partners-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 760px;
+}
+
+.partners-title {
+  font-size: clamp(1.9rem, 4vw, 3rem);
+  font-weight: 600;
+  color: var(--color-white);
+  letter-spacing: -0.018em;
+  margin-bottom: var(--spacing-md);
+}
+
+.partners-lead {
+  color: rgba(255, 255, 255, 0.74);
+  font-size: var(--font-size-lg);
+  line-height: 1.7;
+  max-width: 620px;
+  margin-bottom: var(--spacing-2xl);
+}
+
+.partners-logos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1.5rem, 4vw, 3rem);
+  flex-wrap: wrap;
+}
+
+/* Pastille claire derrière chaque logo (le logo iGEM comporte du noir → illisible
+   sur fond sombre). */
+.partner-logo-chip {
+  width: clamp(120px, 16vw, 160px);
+  height: clamp(120px, 16vw, 160px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(16px, 2vw, 24px);
+  background: #f6f7f9;
+  border-radius: var(--border-radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: var(--shadow-md);
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.partner-logo-chip:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.partner-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Apparition douce à l'entrée dans le viewport. */
+.partners-content > * {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.partners-section.is-in-view .partners-content > * {
+  opacity: 1;
+  transform: none;
+}
+
+.partners-section.is-in-view .partners-content > *:nth-child(2) {
+  transition-delay: 0.08s;
+}
+
+.partners-section.is-in-view .partners-content > *:nth-child(3) {
+  transition-delay: 0.16s;
+}
+
+.partners-section.is-in-view .partners-content > *:nth-child(4) {
+  transition-delay: 0.24s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .partners-content > * {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* SIMULATION RESULTS SECTION */
+.simulation-results-section {
+  /* Tableau de bord riche : on autorise une hauteur naturelle (pas de clipping). */
+  height: auto;
+  min-height: 100vh;
+  overflow: visible;
+  justify-content: flex-start;
+  background:
+    radial-gradient(120% 80% at 80% 0%, rgba(52, 211, 153, 0.06), transparent 60%),
+    #0a0a0c;
+  padding: 110px 0 70px;
+}
+
+.sim-results-inner {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.sim-results-header {
+  text-align: center;
+}
+
+.sim-results-header h2 {
+  font-size: clamp(1.7rem, 3.4vw, 2.6rem);
+  color: var(--color-white);
+  letter-spacing: -0.018em;
+}
+
+.sim-results-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+  gap: var(--spacing-xl);
+  align-items: start;
+}
+
+/* Panneau météo (entrées utilisateur) */
+.sim-weather-panel {
+  background: var(--surface-glass);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.sim-panel-title {
+  font-size: var(--font-size-base);
+  color: var(--color-white);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+}
+
+.sim-panel-hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-500);
+  margin-top: -6px;
+  margin-bottom: 0;
+  line-height: 1.5;
+}
+
+.sim-weather-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sim-weather-slider-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-500);
+}
+
+.sim-weather-slider-head strong {
+  color: var(--color-white);
+  font-variant-numeric: tabular-nums;
+}
+
+.sim-weather-slider input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  outline: none;
+  cursor: pointer;
+}
+
+.sim-weather-slider input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  border: 2px solid #0a0a0c;
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+.sim-weather-slider input[type='range']::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #0a0a0c;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+.sim-weather-context {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-500);
+  margin-bottom: 0;
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sim-weather-context strong {
+  color: var(--color-white);
+}
+
+/* Colonne sorties */
+.sim-output {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.sim-risk-card {
+  background: var(--surface-glass);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.sim-risk-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sim-risk-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 12px currentColor;
+}
+
+.sim-risk-head strong {
+  font-size: var(--font-size-lg);
+}
+
+.sim-risk-score {
+  margin-left: auto;
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+  font-variant-numeric: tabular-nums;
+}
+
+.sim-risk-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sim-risk-bar {
+  display: grid;
+  grid-template-columns: 110px 1fr 44px;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+}
+
+.sim-risk-bar-track {
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.sim-risk-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.sim-risk-bar-value {
+  text-align: right;
+  color: var(--color-white);
+  font-variant-numeric: tabular-nums;
+}
+
+.sim-risk-reco {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+  line-height: 1.5;
+  margin-bottom: 0;
+}
+
+.sim-risk-factors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sim-factor-chip {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-700);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 4px 12px;
+}
+
+.sim-numbers-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+}
+
+.sim-charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+}
+
+.sim-results-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-3xl) var(--spacing-lg);
+  background: var(--surface-glass);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--border-radius-lg);
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.sim-results-empty .empty-state-icon {
+  font-size: 2rem;
+}
+
+.sim-results-empty strong {
+  color: var(--color-white);
+  font-size: var(--font-size-lg);
+}
+
+.sim-results-empty p {
+  color: var(--color-gray-500);
+  margin-bottom: var(--spacing-sm);
+}
+
+@media (max-width: 900px) {
+  .sim-results-grid,
+  .sim-numbers-row,
+  .sim-charts {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ==========================================
    RESPONSIVE LAYOUT OVERRIDES
    ========================================== */
@@ -4081,9 +4497,11 @@ img {
   }
 
   .hero-section,
+  .partners-section,
   .features-section,
   .synbio-section,
   .prediction-dashboard-section,
+  .simulation-results-section,
   .bio-conversion,
   .molecules {
     height: auto;

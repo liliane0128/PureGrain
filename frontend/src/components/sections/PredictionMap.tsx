@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react';
 import { SatelliteMap, type MapLocation } from './SatelliteMap';
-import { ImportCSV } from '@/components/ImportCSV';
 
 const fungalTargets = ['Fusarium graminearum', 'Fusarium culmorum', 'Fusarium verticillioides'];
 
@@ -20,13 +19,28 @@ type CurvePoint = {
   value: number;
 };
 
-type WeatherDay = {
-  date: string;
+// Variables météo choisies par l'utilisateur (entrées du modèle).
+type WeatherInputs = {
+  temperature: number;
   humidity: number;
-  rainMm: number;
-  temperatureMax: number;
-  temperatureMin: number;
-  windKmh: number;
+  rainfall: number;
+  wind: number;
+};
+
+const DEFAULT_WEATHER: WeatherInputs = {
+  temperature: 23,
+  humidity: 78,
+  rainfall: 9,
+  wind: 14,
+};
+
+type RiskLevel = 'green' | 'orange' | 'red';
+
+// Métadonnées d'affichage par niveau de risque (aligné sur risk_level du backend).
+const RISK_META: Record<RiskLevel, { label: string; color: string }> = {
+  green: { label: 'Risque faible', color: '#34d399' },
+  orange: { label: 'Risque modéré', color: '#f5b34d' },
+  red: { label: 'Risque élevé', color: '#f87171' },
 };
 
 type ChartProps = {
@@ -61,84 +75,108 @@ function addDays(date: Date, days: number) {
   return nextDate;
 }
 
-function buildPreHarvestWeather(harvestDate: Date, seed: number): WeatherDay[] {
-  return Array.from({ length: 7 }, (_, index) => {
-    const dayOffset = index - 7;
-    const daySeed = Math.abs(Math.sin(seed * 18.37 + index * 4.91));
-    const temperatureMin = Math.round(9 + daySeed * 8 + index * 0.35);
-    const temperatureMax = Math.round(
-      temperatureMin + 7 + Math.abs(Math.cos(seed * 7 + index)) * 6
-    );
-    const rainMm = Number((Math.max(0, Math.sin(seed * 9 + index * 1.7)) * 13.5).toFixed(1));
-    const humidity = Math.round(clamp(58 + rainMm * 2.1 + daySeed * 18, 52, 96));
-    const windKmh = Math.round(8 + Math.abs(Math.cos(seed * 12 + index * 2.2)) * 28);
-
-    return {
-      date: formatDate(addDays(harvestDate, dayOffset)),
-      humidity,
-      rainMm,
-      temperatureMax,
-      temperatureMin,
-      windKmh,
-    };
-  });
-}
-
 function buildPrediction(
   fungus: string,
   toxin: ToxinTarget,
   location: MapLocation | null,
+  weather: WeatherInputs,
   currentDate: Date
 ) {
   if (!location) {
     return null;
   }
 
+  // Petite variabilité spatiale stable issue de la parcelle.
   const seed = Math.abs(
-    Math.sin(
-      location.lat * 12.9898 + location.lng * 78.233 + fungus.length * 4.7 + toxin.label.length
-    )
+    Math.sin(location.lat * 12.9898 + location.lng * 78.233 + fungus.length * 4.7)
   );
-  const fungalStart = 8 + seed * 18;
+
+  // Facteurs de favorabilité météo pour Fusarium / mycotoxines.
+  const humidityFactor = clamp((weather.humidity - 50) / 45, 0, 1);
+  const rainFactor = clamp(weather.rainfall / 25, 0, 1);
+  const tempFactor = clamp(1 - Math.abs(weather.temperature - 25) / 22, 0, 1);
+  const windFactor = clamp(1 - weather.wind / 60, 0, 1); // vent fort = assèchement
+  const weatherPressure = clamp(
+    0.34 * humidityFactor + 0.32 * rainFactor + 0.22 * tempFactor + 0.12 * windFactor,
+    0,
+    1
+  );
+
   const harvestOffsetDays = 24 + Math.round(seed * 16);
   const harvestDate = addDays(currentDate, harvestOffsetDays);
-  const fungalGrowth = 1.13 + seed * 0.12 + toxin.growthWeight * 0.015;
-  const fungalCurve = Array.from({ length: 12 }, (_, index) => {
-    const day = index * 3;
-    const value = clamp(
-      Math.round(fungalStart * Math.pow(fungalGrowth, index) + index * (2.2 + seed * 2.1)),
+
+  const fungalStart = 8 + weatherPressure * 22 + seed * 6;
+  const fungalGrowth = 1.1 + weatherPressure * 0.16 + toxin.growthWeight * 0.015;
+  const fungalCurve = Array.from({ length: 12 }, (_, index) => ({
+    day: index * 3,
+    value: clamp(
+      Math.round(fungalStart * Math.pow(fungalGrowth, index) + index * (1.8 + weatherPressure * 2.4)),
       0,
       100
-    );
+    ),
+  }));
 
-    return { day, value };
-  });
   const contaminationUgKg = Math.round(
     toxin.thresholdUgKg *
-      clamp(0.2 + seed * 0.86 + fungalCurve[0].value / 190 + toxin.growthWeight * 0.08, 0.18, 1.58)
+      clamp(0.18 + weatherPressure * 1.15 + toxin.growthWeight * 0.06, 0.16, 1.7)
   );
-  const dailyToxinGrowth = 1.026 + seed * 0.042 + toxin.growthWeight * 0.009;
-  const toxinCurve = Array.from({ length: 12 }, (_, index) => {
-    const day = index * 3;
-    const value = Math.round(contaminationUgKg * Math.pow(dailyToxinGrowth, day));
+  const dailyToxinGrowth = 1.02 + weatherPressure * 0.05 + toxin.growthWeight * 0.008;
+  const toxinCurve = Array.from({ length: 12 }, (_, index) => ({
+    day: index * 3,
+    value: Math.round(contaminationUgKg * Math.pow(dailyToxinGrowth, index * 3)),
+  }));
 
-    return { day, value };
-  });
   let thresholdDay: number | null = null;
 
   for (let day = 0; day <= 60; day += 1) {
-    const projectedContamination = contaminationUgKg * Math.pow(dailyToxinGrowth, day);
-
-    if (projectedContamination >= toxin.thresholdUgKg) {
+    if (contaminationUgKg * Math.pow(dailyToxinGrowth, day) >= toxin.thresholdUgKg) {
       thresholdDay = day;
       break;
     }
   }
 
+  // Score de risque (0-1) puis probabilités 3 classes (vert / orange / rouge).
+  const riskScore = clamp(
+    0.12 + weatherPressure * 0.62 + (contaminationUgKg / toxin.thresholdUgKg) * 0.3,
+    0,
+    1
+  );
+  const rawGreen = Math.max(0, 1 - riskScore * 2);
+  const rawRed = Math.max(0, (riskScore - 0.5) * 2);
+  const rawOrange = Math.max(0, 1 - Math.abs(riskScore - 0.5) * 2);
+  const total = rawGreen + rawOrange + rawRed || 1;
+  const probabilities = {
+    green: rawGreen / total,
+    orange: rawOrange / total,
+    red: rawRed / total,
+  };
+  const level: RiskLevel =
+    probabilities.red >= probabilities.orange && probabilities.red >= probabilities.green
+      ? 'red'
+      : probabilities.orange >= probabilities.green
+        ? 'orange'
+        : 'green';
+
+  const storageRecommendation =
+    level === 'red'
+      ? 'Séchage immédiat ou tri du lot avant tout stockage'
+      : level === 'orange'
+        ? 'Ventilation renforcée et nouveau contrôle sous 7 jours'
+        : 'Stockage standard, surveillance légère suffisante';
+
+  const topFactors = [
+    { label: 'Humidité', weight: humidityFactor },
+    { label: 'Pluviométrie', weight: rainFactor },
+    { label: 'Température', weight: tempFactor },
+    { label: 'Charge fongique', weight: fungalCurve[fungalCurve.length - 1].value / 100 },
+  ]
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, 3)
+    .map((factor) => factor.label);
+
   return {
     contaminationUgKg,
-    fungalCurve,
-    fungalEnd: fungalCurve[fungalCurve.length - 1].value,
+    thresholdUgKg: toxin.thresholdUgKg,
     harvestDate: formatDate(harvestDate),
     thresholdDate:
       thresholdDay === null
@@ -150,9 +188,9 @@ function buildPrediction(
         : thresholdDay === 0
           ? 'Seuil déjà dépassé'
           : `Dépassement prévu dans ${thresholdDay} jours`,
-    thresholdUgKg: toxin.thresholdUgKg,
+    fungalCurve,
     toxinCurve,
-    weatherDays: buildPreHarvestWeather(harvestDate, seed),
+    risk: { level, score: riskScore, probabilities, storageRecommendation, topFactors },
   };
 }
 
@@ -165,7 +203,7 @@ function PredictionChart({
   unit,
 }: ChartProps) {
   const width = 680;
-  const height = 240;
+  const height = 220;
   const padding = 34;
   const values = points.map((point) => point.value);
   const maxValue = Math.max(...values, threshold ?? 0, 1);
@@ -186,12 +224,7 @@ function PredictionChart({
   const lastPoint = coordinates[coordinates.length - 1];
 
   return (
-    <svg
-      className="prediction-chart"
-      viewBox={`0 0 ${width} ${height}`}
-      role="img"
-      aria-label={label}
-    >
+    <svg className="prediction-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={label}>
       <line x1={padding} y1={padding} x2={padding} y2={height - padding} />
       <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} />
       {thresholdY !== null && (
@@ -228,22 +261,55 @@ function PredictionChart({
   );
 }
 
+type WeatherSliderProps = {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  unit: string;
+  onChange: (value: number) => void;
+};
+
+function WeatherSlider({ label, value, min, max, step, unit, onChange }: WeatherSliderProps) {
+  return (
+    <label className="sim-weather-slider">
+      <span className="sim-weather-slider-head">
+        <span>{label}</span>
+        <strong>
+          {value}
+          {unit}
+        </strong>
+      </span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+      />
+    </label>
+  );
+}
+
 export function PredictionMap() {
   const [selectedFungus, setSelectedFungus] = useState(fungalTargets[0]);
   const [selectedToxin, setSelectedToxin] = useState<ToxinLabel>(toxinTargets[0].label);
   const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
+  const [weather, setWeather] = useState<WeatherInputs>(DEFAULT_WEATHER);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const currentDate = useMemo(() => new Date(), []);
   const today = useMemo(() => formatDate(currentDate), [currentDate]);
-  
+
   const selectedToxinConfig = useMemo(
     () => toxinTargets.find((toxin) => toxin.label === selectedToxin) ?? toxinTargets[0],
     [selectedToxin]
   );
-  
+
   const prediction = useMemo(
-    () => buildPrediction(selectedFungus, selectedToxinConfig, selectedLocation, currentDate),
-    [currentDate, selectedFungus, selectedLocation, selectedToxinConfig]
+    () => buildPrediction(selectedFungus, selectedToxinConfig, selectedLocation, weather, currentDate),
+    [currentDate, selectedFungus, selectedLocation, selectedToxinConfig, weather]
   );
 
   const handleLocationSelect = (location: MapLocation) => {
@@ -251,98 +317,197 @@ export function PredictionMap() {
     setHasSubmitted(false);
   };
 
+  const launchSimulation = () => {
+    setHasSubmitted(true);
+    requestAnimationFrame(() => {
+      document.getElementById('simulation-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
+  const setWeatherField = (field: keyof WeatherInputs) => (value: number) =>
+    setWeather((current) => ({ ...current, [field]: value }));
+
+  const risk = prediction?.risk;
+  const riskMeta = risk ? RISK_META[risk.level] : null;
+
   return (
-    <section id="prediction-map" className="prediction-dashboard-section">
-      <div className="prediction-dashboard-header">
-        <span className="section-badge-glow">Console de prédiction</span>
-        <h2>Simulateur agronomique prédictif</h2>
-        <p>
-          Définissez les paramètres cibles, localisez une parcelle sur la carte satellite interactive, puis lancez le calcul prédictif.
-        </p>
-      </div>
+    <>
+      {/* Section carte : configuration de la parcelle + lancement */}
+      <section id="prediction-map" className="prediction-dashboard-section">
+        <div className="prediction-dashboard-header">
+          <span className="section-badge-glow">Console de prédiction</span>
+          <h2>Simulateur agronomique prédictif</h2>
+          <p>
+            Définissez les paramètres cibles, localisez une parcelle sur la carte satellite, puis
+            lancez le calcul : la météo et les résultats s’affichent dans la section suivante.
+          </p>
+        </div>
 
-      <div className="prediction-dashboard-layout">
-        <div className="prediction-map-canvas">
-          <SatelliteMap selectedLocation={selectedLocation} onLocationSelect={handleLocationSelect} />
-          
-          {/* Overlay gauche: Configuration & Inputs */}
-          <div className="prediction-overlay-panel prediction-overlay-left">
-            <h3 className="overlay-panel-title">Paramètres</h3>
-            
-            <div className="prediction-field-group">
-              <label htmlFor="fungus-select">Champignon à prédire</label>
-              <select
-                id="fungus-select"
-                className="prediction-input-select"
-                value={selectedFungus}
-                onChange={(e) => {
-                  setSelectedFungus(e.target.value);
-                  setHasSubmitted(false);
-                }}
+        <div className="prediction-dashboard-layout">
+          <div className="prediction-map-canvas">
+            <SatelliteMap selectedLocation={selectedLocation} onLocationSelect={handleLocationSelect} />
+
+            <div className="prediction-overlay-panel prediction-overlay-left">
+              <h3 className="overlay-panel-title">Paramètres</h3>
+
+              <div className="prediction-field-group">
+                <label htmlFor="fungus-select">Champignon à prédire</label>
+                <select
+                  id="fungus-select"
+                  className="prediction-input-select"
+                  value={selectedFungus}
+                  onChange={(e) => {
+                    setSelectedFungus(e.target.value);
+                    setHasSubmitted(false);
+                  }}
+                >
+                  {fungalTargets.map((f) => (
+                    <option key={f} value={f}>
+                      {f}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="prediction-field-group">
+                <label htmlFor="toxin-select">Toxine à suivre</label>
+                <select
+                  id="toxin-select"
+                  className="prediction-input-select"
+                  value={selectedToxin}
+                  onChange={(e) => {
+                    setSelectedToxin(e.target.value as ToxinLabel);
+                    setHasSubmitted(false);
+                  }}
+                >
+                  {toxinTargets.map((t) => (
+                    <option key={t.label} value={t.label}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="prediction-location-info">
+                <span>Coordonnées de la parcelle</span>
+                <strong>
+                  {selectedLocation
+                    ? `${formatCoordinate(selectedLocation.lat, 'N', 'S')} · ${formatCoordinate(
+                        selectedLocation.lng,
+                        'E',
+                        'O'
+                      )}`
+                    : 'Cliquez sur la carte'}
+                </strong>
+                <small>Date d&apos;analyse: {today}</small>
+              </div>
+
+              <button
+                type="button"
+                className="prediction-action-btn"
+                disabled={!selectedLocation}
+                onClick={launchSimulation}
               >
-                {fungalTargets.map((f) => (
-                  <option key={f} value={f}>
-                    {f}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="prediction-field-group">
-              <label htmlFor="toxin-select">Toxine à suivre</label>
-              <select
-                id="toxin-select"
-                className="prediction-input-select"
-                value={selectedToxin}
-                onChange={(e) => {
-                  setSelectedToxin(e.target.value as ToxinLabel);
-                  setHasSubmitted(false);
-                }}
-              >
-                {toxinTargets.map((t) => (
-                  <option key={t.label} value={t.label}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="prediction-location-info">
-              <span>Coordonnées de la parcelle</span>
-              <strong>
-                {selectedLocation
-                  ? `${formatCoordinate(selectedLocation.lat, 'N', 'S')} · ${formatCoordinate(
-                      selectedLocation.lng,
-                      'E',
-                      'O'
-                    )}`
-                  : 'Cliquez sur la carte'}
-              </strong>
-              <small>Date d&apos;analyse: {today}</small>
-            </div>
-
-            <button
-              type="button"
-              className="prediction-action-btn"
-              disabled={!selectedLocation}
-              onClick={() => setHasSubmitted(true)}
-            >
-              Lancer la simulation
-            </button>
-
-            {/* Upload CSV intégré dans le panneau de configuration pour rester visible */}
-            <div style={{ marginTop: 12 }}>
-              <ImportCSV />
+                Lancer la simulation
+              </button>
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* Overlay droit: Résultats & Graphes */}
-          <div className={`prediction-overlay-panel prediction-overlay-right ${hasSubmitted && prediction ? 'is-open' : ''}`}>
-            {hasSubmitted && prediction ? (
-              <div className="prediction-results-content">
-                <h3 className="overlay-panel-title">Analyse prédictive</h3>
-                
-                <div className="results-numbers-row">
+      {/* Section résultats : météo choisie + sorties du modèle */}
+      <section id="simulation-results" className="simulation-results-section">
+        <div className="container sim-results-inner">
+          <header className="sim-results-header">
+            <span className="section-badge-glow">Résultats de simulation</span>
+            <h2>Météo, risque et trajectoire de contamination</h2>
+          </header>
+
+          {hasSubmitted && prediction && risk && riskMeta ? (
+            <div className="sim-results-grid">
+              <aside className="sim-weather-panel">
+                <h3 className="sim-panel-title">Conditions météo</h3>
+                <p className="sim-panel-hint">
+                  Ajustez les variables : le risque et les courbes se recalculent en direct.
+                </p>
+                <WeatherSlider
+                  label="Température"
+                  value={weather.temperature}
+                  min={5}
+                  max={38}
+                  step={1}
+                  unit=" °C"
+                  onChange={setWeatherField('temperature')}
+                />
+                <WeatherSlider
+                  label="Humidité"
+                  value={weather.humidity}
+                  min={30}
+                  max={100}
+                  step={1}
+                  unit=" %"
+                  onChange={setWeatherField('humidity')}
+                />
+                <WeatherSlider
+                  label="Pluviométrie"
+                  value={weather.rainfall}
+                  min={0}
+                  max={40}
+                  step={1}
+                  unit=" mm"
+                  onChange={setWeatherField('rainfall')}
+                />
+                <WeatherSlider
+                  label="Vent"
+                  value={weather.wind}
+                  min={0}
+                  max={60}
+                  step={1}
+                  unit=" km/h"
+                  onChange={setWeatherField('wind')}
+                />
+                <p className="sim-weather-context">
+                  Récolte estimée : <strong>{prediction.harvestDate}</strong>
+                </p>
+              </aside>
+
+              <div className="sim-output">
+                <div className="sim-risk-card" style={{ borderColor: `${riskMeta.color}55` }}>
+                  <div className="sim-risk-head">
+                    <span className="sim-risk-dot" style={{ background: riskMeta.color }} />
+                    <strong style={{ color: riskMeta.color }}>{riskMeta.label}</strong>
+                    <span className="sim-risk-score">score {Math.round(risk.score * 100)}/100</span>
+                  </div>
+                  <div className="sim-risk-bars">
+                    {(['green', 'orange', 'red'] as const).map((key) => (
+                      <div className="sim-risk-bar" key={key}>
+                        <span className="sim-risk-bar-label">{RISK_META[key].label}</span>
+                        <span className="sim-risk-bar-track">
+                          <span
+                            className="sim-risk-bar-fill"
+                            style={{
+                              width: `${Math.round(risk.probabilities[key] * 100)}%`,
+                              background: RISK_META[key].color,
+                            }}
+                          />
+                        </span>
+                        <span className="sim-risk-bar-value">
+                          {Math.round(risk.probabilities[key] * 100)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="sim-risk-reco">{risk.storageRecommendation}</p>
+                  <div className="sim-risk-factors">
+                    {risk.topFactors.map((factor) => (
+                      <span className="sim-factor-chip" key={factor}>
+                        {factor}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="sim-numbers-row">
                   <div className="result-number-box">
                     <span>Contamination estimée</span>
                     <strong>{prediction.contaminationUgKg} µg/kg</strong>
@@ -355,7 +520,7 @@ export function PredictionMap() {
                   </div>
                 </div>
 
-                <div className="results-charts-container">
+                <div className="sim-charts">
                   <div className="chart-item-box">
                     <span>Contamination en {selectedToxin}</span>
                     <PredictionChart
@@ -376,30 +541,23 @@ export function PredictionMap() {
                     />
                   </div>
                 </div>
-
-                <div className="results-weather-box">
-                  <span>Météo simulée pré-récolte (Harvest: {prediction.harvestDate})</span>
-                  <div className="weather-forecast-row">
-                    {prediction.weatherDays.slice(0, 4).map((day) => (
-                      <div className="weather-forecast-day" key={day.date}>
-                        <small>{day.date.split(' ')[0]}</small>
-                        <strong>{day.temperatureMax}°C</strong>
-                        <small>{day.rainMm}mm pluie</small>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
-            ) : (
-              <div className="results-empty-state">
-                <span className="empty-state-icon">📡</span>
-                <strong>En attente d&apos;une parcelle</strong>
-                <p>Cliquez sur une zone agricole de la carte pour définir les coordonnées, puis lancez la simulation.</p>
-              </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="sim-results-empty">
+              <span className="empty-state-icon">📡</span>
+              <strong>En attente d&apos;une simulation</strong>
+              <p>
+                Localisez une parcelle sur la carte ci-dessus et lancez la simulation pour afficher
+                ici la météo et les courbes de sortie.
+              </p>
+              <a className="btn btn-secondary" href="#prediction-map">
+                Revenir à la carte
+              </a>
+            </div>
+          )}
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }
