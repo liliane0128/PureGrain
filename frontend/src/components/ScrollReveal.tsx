@@ -1,44 +1,35 @@
-// Directive Next.js: ce composant observe les éléments dans le navigateur.
 'use client';
 
-// Import du hook d'effet pour installer l'observer au montage.
 import { useEffect } from 'react';
 
-// Sélecteur des textes éditoriaux à faire apparaître doucement au scroll.
+// Textes éditoriaux révélés en douceur lors de leur entrée dans le viewport.
 const REVEAL_SELECTOR = [
-  '.features-copy h2',
-  '.features-copy p',
+  '.features-header-text h2',
+  '.features-header-text p',
   '.bio-conversion-copy h2',
   '.bio-conversion-copy p',
   '.molecules-header h2',
   '.molecules-header p',
 ].join(', ');
 
-// Composant invisible qui ajoute les classes d'apparition aux titres et sous-titres.
+/** Composant sans rendu qui anime l'apparition des titres et paragraphes au scroll. */
 export function ScrollReveal() {
-  // Installe l'observation des éléments éditoriaux après le rendu client.
   useEffect(() => {
-    // Récupère les éléments existants dans la page.
     const elements = Array.from(document.querySelectorAll<HTMLElement>(REVEAL_SELECTOR));
 
-    // Ajoute l'état initial à tous les éléments ciblés.
     elements.forEach((element, index) => {
       element.classList.add('scroll-reveal');
       element.style.setProperty('--scroll-reveal-delay', `${Math.min(index * 70, 210)}ms`);
     });
 
-    // Observe l'entrée dans le viewport.
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          // Ignore les éléments encore hors écran.
           if (!entry.isIntersecting) {
             return;
           }
 
-          // Déclenche l'apparition douce.
           entry.target.classList.add('scroll-reveal-visible');
-          // Garde l'élément visible après le premier passage.
           observer.unobserve(entry.target);
         });
       },
@@ -48,10 +39,9 @@ export function ScrollReveal() {
       }
     );
 
-    // Démarre l'observation de chaque élément.
     elements.forEach((element) => observer.observe(element));
 
-    // Déclenche explicitement les textes déjà visibles au chargement, notamment le hero.
+    // Révèle immédiatement les textes déjà visibles au chargement (hero notamment).
     requestAnimationFrame(() => {
       elements.forEach((element) => {
         const rect = element.getBoundingClientRect();
@@ -63,10 +53,8 @@ export function ScrollReveal() {
       });
     });
 
-    // Nettoie l'observer au démontage.
     return () => observer.disconnect();
   }, []);
 
-  // Ce composant ne rend rien à l'écran.
   return null;
 }

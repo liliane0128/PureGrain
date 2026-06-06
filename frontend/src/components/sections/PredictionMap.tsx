@@ -2,27 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { SatelliteMap, type MapLocation } from './SatelliteMap';
-import { predictGeo, type GeoPredictionResponse, type RiskLevel } from '@/lib/api';
 
 const fungalTargets = ['Fusarium graminearum', 'Fusarium culmorum', 'Fusarium verticillioides'];
-
-const fungusToCropGroup: Record<string, string> = {
-  'Fusarium graminearum': 'wheat',
-  'Fusarium culmorum': 'wheat',
-  'Fusarium verticillioides': 'maize',
-};
-
-const riskColors: Record<RiskLevel, string> = {
-  GREEN: '#22c55e',
-  ORANGE: '#f97316',
-  RED: '#ef4444',
-};
-
-const riskLabels: Record<RiskLevel, string> = {
-  GREEN: 'Risque faible',
-  ORANGE: 'Risque modéré',
-  RED: 'Risque élevé',
-};
 
 const toxinTargets = [
   { label: 'Zéaralénone (ZEN)', thresholdUgKg: 100, growthWeight: 0.92 },
@@ -251,9 +232,6 @@ export function PredictionMap() {
   const [selectedToxin, setSelectedToxin] = useState<ToxinLabel>(toxinTargets[0].label);
   const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
-  const [apiResult, setApiResult] = useState<GeoPredictionResponse | null>(null);
-  const [apiError, setApiError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const currentDate = useMemo(() => new Date(), []);
   const today = useMemo(() => formatDate(currentDate), [currentDate]);
   
@@ -270,29 +248,6 @@ export function PredictionMap() {
   const handleLocationSelect = (location: MapLocation) => {
     setSelectedLocation(location);
     setHasSubmitted(false);
-    setApiResult(null);
-    setApiError(null);
-  };
-
-  const handleSubmit = async () => {
-    if (!selectedLocation) return;
-    setHasSubmitted(true);
-    setApiResult(null);
-    setApiError(null);
-    setIsLoading(true);
-    try {
-      const result = await predictGeo(
-        selectedLocation.lat,
-        selectedLocation.lng,
-        fungusToCropGroup[selectedFungus] ?? 'maize',
-        'Primary production',
-      );
-      setApiResult(result);
-    } catch (err) {
-      setApiError(err instanceof Error ? err.message : 'Erreur API');
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   return (
@@ -368,10 +323,10 @@ export function PredictionMap() {
             <button
               type="button"
               className="prediction-action-btn"
-              disabled={!selectedLocation || isLoading}
-              onClick={handleSubmit}
+              disabled={!selectedLocation}
+              onClick={() => setHasSubmitted(true)}
             >
-              {isLoading ? 'Analyse en cours…' : 'Lancer la simulation'}
+              Lancer la simulation
             </button>
           </div>
 
@@ -380,44 +335,7 @@ export function PredictionMap() {
             {hasSubmitted && prediction ? (
               <div className="prediction-results-content">
                 <h3 className="overlay-panel-title">Analyse prédictive</h3>
-
-                {/* Real ML prediction badge */}
-                {apiResult && (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    background: riskColors[apiResult.risk_level] + '22',
-                    border: `1.5px solid ${riskColors[apiResult.risk_level]}`,
-                    marginBottom: '12px',
-                  }}>
-                    <span style={{
-                      background: riskColors[apiResult.risk_level],
-                      color: '#fff',
-                      fontWeight: 700,
-                      padding: '3px 10px',
-                      borderRadius: '4px',
-                      fontSize: '0.8rem',
-                      letterSpacing: '0.05em',
-                    }}>
-                      {apiResult.risk_level}
-                    </span>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>
-                      {riskLabels[apiResult.risk_level]}
-                    </span>
-                    <span style={{ marginLeft: 'auto', fontSize: '0.78rem', opacity: 0.7 }}>
-                      ZEN : {(apiResult.zen_probability * 100).toFixed(0)} %
-                    </span>
-                  </div>
-                )}
-                {apiError && (
-                  <div style={{ color: '#ef4444', fontSize: '0.8rem', marginBottom: '8px' }}>
-                    ⚠ {apiError}
-                  </div>
-                )}
-
+                
                 <div className="results-numbers-row">
                   <div className="result-number-box">
                     <span>Contamination estimée</span>

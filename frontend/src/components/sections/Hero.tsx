@@ -1,22 +1,17 @@
 'use client';
 
-import { useRef } from 'react';
-
-const HERO_VIDEO_SRC = '/videos/main_vid.mp4';
-const HERO_VIDEO_POSTER = '/images/main_vid_poster.jpg';
+const HERO_VIDEO_WEBM = '/videos/hero.webm';
+const HERO_VIDEO_MP4 = '/videos/hero.mp4';
+const HERO_VIDEO_POSTER = '/images/hero_poster.jpg';
 
 /**
- * Composant Hero - Section d'accueil principale immersive style Tesla.com
- * Affiche le texte de marque et les boutons d'action sur une vidéo d'arrière-plan plein écran.
+ * Section d'accueil immersive : texte de marque et appels à l'action posés sur
+ * une vidéo plein écran.
  */
 export function Hero() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-
   return (
     <section id="top" className="hero-section">
-      {/* Vidéo de fond en plein écran */}
       <video
-        ref={videoRef}
         className="hero-bg-video"
         autoPlay
         loop
@@ -26,7 +21,9 @@ export function Hero() {
         poster={HERO_VIDEO_POSTER}
         aria-hidden="true"
       >
-        <source src={HERO_VIDEO_SRC} type="video/mp4" />
+        {/* WebM (plus léger) servi en priorité, MP4 en repli universel. */}
+        <source src={HERO_VIDEO_WEBM} type="video/webm" />
+        <source src={HERO_VIDEO_MP4} type="video/mp4" />
       </video>
 
       {/* Voile d'ombrage pour maximiser le contraste des textes */}

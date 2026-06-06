@@ -4,12 +4,21 @@
  */
 
 :root {
-  /* Tesla-inspired color system (mostly pure dark and monochrome with gold/green accents) */
-  --color-primary: #f5b34d; /* Cereal gold */
+  /* Clean biotech system: calm dark canvas, soft rounded edges, emerald + cereal-gold accents */
+  --color-primary: #f5b34d; /* Cereal gold — warm brand highlight, used sparingly */
   --color-primary-dark: #d9962b;
   --color-primary-light: #fcd34d;
   --color-secondary: #94a3b8;
-  --color-accent: #10b981; /* Green accent for bio/active states */
+  --color-accent: #34d399; /* Emerald — biotech / active accent */
+  --color-accent-dark: #10b981;
+  --color-accent-soft: rgba(52, 211, 153, 0.14);
+
+  /* Soft glass surfaces and hairline edges */
+  --surface-glass: rgba(255, 255, 255, 0.04);
+  --surface-glass-strong: rgba(255, 255, 255, 0.06);
+  --edge-hairline: 1px solid rgba(255, 255, 255, 0.1);
+  --color-steel: #e7eaee; /* Light neutral used for crisp button surfaces */
+  --tracking-label: 0.08em; /* Subtle tracking for small uppercase labels */
 
   /* Palette of grays (pitch black surfaces to crisp white/light gray text) */
   --color-gray-50: #000000; /* Pure black surface */
@@ -23,6 +32,7 @@
   --color-gray-800: #f4f4f7; /* Subheading */
   --color-gray-900: #ffffff; /* Headings */
   --color-white: #ffffff;
+  --color-black: #0a0a0c; /* Near-black ink for use on light surfaces */
 
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -43,11 +53,11 @@
   --font-size-3xl: 2.25rem;
   --font-size-4xl: 3.5rem;
 
-  /* Border Radii */
-  --border-radius-sm: 4px;
-  --border-radius-md: 8px;
-  --border-radius-lg: 12px;
-  --border-radius-xl: 20px;
+  /* Border Radii — soft, modern, friendly rounding */
+  --border-radius-sm: 8px;
+  --border-radius-md: 12px;
+  --border-radius-lg: 18px;
+  --border-radius-xl: 24px;
   --border-radius-2xl: 32px;
 
   /* Transitions */
@@ -55,11 +65,11 @@
   --transition-base: 250ms;
   --transition-slow: 400ms;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.7);
-  --shadow-lg: 0 16px 50px rgba(0, 0, 0, 0.85);
-  --shadow-xl: 0 24px 80px rgba(0, 0, 0, 0.95);
+  /* Shadows — soft, diffuse depth */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.45);
+  --shadow-xl: 0 32px 90px rgba(0, 0, 0, 0.55);
 }
 
 * {
@@ -105,21 +115,17 @@ h3,
 h4,
 h5,
 h6 {
-  /* Resserre la hauteur de ligne des titres pour améliorer leur densité visuelle. */
-  line-height: 1.2;
-  /* Applique une graisse commune aux titres. */
+  line-height: 1.22;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 h1 {
-  /* Taille du titre principal de la page. */
   font-size: var(--font-size-4xl);
 }
 
 h2 {
-  /* Taille des titres de section. */
   font-size: var(--font-size-3xl);
-  /* Espacement sous chaque titre de section. */
   margin-bottom: var(--spacing-md);
 }
 
@@ -262,7 +268,7 @@ img {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: var(--border-radius-md);
   background: rgba(255, 255, 255, 0.1);
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -284,18 +290,18 @@ img {
 }
 
 .site-nav a {
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.8);
   background: transparent;
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: 999px;
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-weight: 500;
   transition: all var(--transition-fast) ease;
 }
 
 .site-nav a:hover {
   color: var(--color-white);
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 /* HERO SECTION */
@@ -1244,10 +1250,13 @@ img {
 .satellite-map-tile-layer {
   position: absolute;
   inset: 0;
+  z-index: 1;
 }
 
-.satellite-map-tile-layer {
-  z-index: 1;
+/* Couche basse résolution placée sous la couche HD pour combler le fond pendant
+   le chargement des tuiles nettes (évite tout trou visible au zoom). */
+.satellite-map-tile-layer-base {
+  z-index: 0;
 }
 
 .satellite-map-tile {
@@ -2390,8 +2399,7 @@ img {
   opacity: 0.34;
 }
 
-.hero-text h1,
-.features-copy h2 {
+.hero-text h1 {
   color: var(--color-gray-900);
 }
 
@@ -2413,8 +2421,7 @@ img {
   animation: none;
 }
 
-.hero-subtitle,
-.features-copy p {
+.hero-subtitle {
   color: var(--color-gray-700);
 }
 
@@ -2771,18 +2778,6 @@ img {
     gap: var(--spacing-xl);
   }
 
-  .features-copy h2 {
-    /* Centre le titre lorsque la section est empilée. */
-    text-align: center;
-  }
-
-  .features-copy p {
-    /* Centre les paragraphes sur petit écran. */
-    text-align: center;
-    /* Garde une taille confortable sans surcharger l'écran mobile. */
-    font-size: var(--font-size-base);
-  }
-
   .field-lab-panel {
     grid-template-columns: 1fr;
     padding: var(--spacing-2xl) 0;
@@ -2933,6 +2928,7 @@ img {
 
 .hero-section,
 .features-section,
+.synbio-section,
 .prediction-dashboard-section,
 .bio-conversion,
 .molecules {
@@ -2967,7 +2963,17 @@ img {
 .hero-bg-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.25) 50%, rgba(0, 0, 0, 0.7) 100%);
+  /* Scrim haut/bas pour la lisibilité du texte + léger vignettage qui laisse
+     respirer la vidéo au centre. */
+  background:
+    radial-gradient(125% 85% at 50% 50%, transparent 42%, rgba(0, 0, 0, 0.32) 100%),
+    linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.5) 0%,
+      rgba(0, 0, 0, 0.12) 36%,
+      rgba(0, 0, 0, 0.12) 58%,
+      rgba(0, 0, 0, 0.72) 100%
+    );
   z-index: 2;
   pointer-events: none;
 }
@@ -2994,19 +3000,19 @@ img {
 }
 
 .hero-main-title {
-  font-size: clamp(2.5rem, 5.5vw, 4.5rem);
-  font-weight: 800;
+  font-size: clamp(2.6rem, 5.6vw, 4.75rem);
+  font-weight: 600;
   color: var(--color-white);
-  line-height: 1.1;
-  letter-spacing: -1px;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
   margin-bottom: var(--spacing-sm);
-  text-transform: uppercase;
 }
 
 .hero-sub-title {
-  font-size: clamp(1.1rem, 2.2vw, 1.6rem);
+  font-size: clamp(1.1rem, 2.2vw, 1.55rem);
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.82);
+  letter-spacing: 0.01em;
   margin-bottom: 0;
 }
 
@@ -3039,38 +3045,41 @@ img {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  padding: 14px 48px;
-  transition: all var(--transition-base) ease;
-  min-width: 220px;
+  letter-spacing: 0.01em;
+  padding: 15px 44px;
+  transition:
+    transform var(--transition-base) ease,
+    background-color var(--transition-base) ease,
+    border-color var(--transition-base) ease,
+    box-shadow var(--transition-base) ease;
+  min-width: 200px;
   cursor: pointer;
 }
 
 .btn-primary {
   background-color: var(--color-white);
-  color: var(--color-black);
-  border: none;
+  color: #0a0a0c;
+  border: 1px solid transparent;
 }
 
 .btn-primary:hover {
-  background-color: rgba(255, 255, 255, 0.88);
+  background-color: var(--color-steel);
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-secondary {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.05);
   color: var(--color-white);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(8px);
+  border: var(--edge-hairline);
+  backdrop-filter: blur(10px);
 }
 
 .btn-secondary:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-  border-color: var(--color-white);
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
   transform: translateY(-2px);
 }
 
@@ -3098,7 +3107,15 @@ img {
 .features-bg-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.2) 60%, rgba(0, 0, 0, 0.7) 100%);
+  background:
+    radial-gradient(125% 85% at 50% 50%, transparent 42%, rgba(0, 0, 0, 0.3) 100%),
+    linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.55) 0%,
+      rgba(0, 0, 0, 0.12) 42%,
+      rgba(0, 0, 0, 0.12) 56%,
+      rgba(0, 0, 0, 0.72) 100%
+    );
   z-index: 2;
   pointer-events: none;
 }
@@ -3125,12 +3142,12 @@ img {
 }
 
 .features-main-title {
-  font-size: clamp(2rem, 4.5vw, 3.5rem);
-  font-weight: 800;
+  font-size: clamp(2rem, 4.5vw, 3.4rem);
+  font-weight: 600;
   color: var(--color-white);
   line-height: 1.15;
   margin-bottom: var(--spacing-sm);
-  letter-spacing: -0.5px;
+  letter-spacing: -0.018em;
 }
 
 .features-sub-title {
@@ -3291,7 +3308,7 @@ img {
 .prediction-input-select {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
+  border-radius: var(--border-radius-md);
   color: var(--color-white);
   padding: 10px 14px;
   font-size: var(--font-size-sm);
@@ -3307,8 +3324,9 @@ img {
 }
 
 .prediction-input-select:focus {
-  border-color: var(--color-primary-light);
+  border-color: var(--color-accent);
   background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
 }
 
 .prediction-location-info {
@@ -3344,21 +3362,20 @@ img {
 
 .prediction-action-btn {
   background: var(--color-white);
-  color: var(--color-black);
+  color: #0a0a0c;
   border: none;
-  border-radius: 8px;
+  border-radius: 999px;
   padding: 14px;
   font-size: var(--font-size-sm);
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.01em;
   transition: all 0.2s ease;
   margin-top: auto;
 }
 
 .prediction-action-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.88);
+  background: var(--color-steel);
   transform: translateY(-1px);
 }
 
@@ -3753,20 +3770,25 @@ img {
 }
 
 .molecule-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
+  background: var(--surface-glass);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: var(--border-radius-lg);
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition:
+    transform 0.35s ease,
+    border-color 0.35s ease,
+    background 0.35s ease,
+    box-shadow 0.35s ease;
   display: flex;
   flex-direction: column;
 }
 
 .molecule-card:hover {
-  transform: translateY(-6px);
-  border-color: rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.03);
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.4);
+  transform: translateY(-5px);
+  border-color: rgba(52, 211, 153, 0.35);
+  background: var(--surface-glass-strong);
+  box-shadow: var(--shadow-lg);
 }
 
 .molecule-viewer {
@@ -3786,9 +3808,9 @@ img {
 .science-module-tag {
   font-size: 10px;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-accent);
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: var(--tracking-label);
   margin-bottom: var(--spacing-xs);
   display: block;
 }
@@ -3875,22 +3897,180 @@ img {
 
 /* General Utilities & Badges */
 .section-badge-glow {
-  display: inline-block;
-  padding: 6px 14px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 18px;
+  background: var(--color-accent-soft);
+  border: 1px solid rgba(52, 211, 153, 0.25);
   border-radius: 999px;
-  color: var(--color-white);
-  font-size: 10px;
-  font-weight: 700;
+  color: #d6f7e9;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: var(--tracking-label);
   margin-bottom: var(--spacing-md);
-  box-shadow: 0 0 12px rgba(255, 255, 255, 0.05);
+}
+
+/* Point émeraude qui signale l'identité biotech de la section. */
+.section-badge-glow::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.8);
+}
+
+/* SYNTHETIC BIOLOGY SECTION */
+.synbio-section {
+  background:
+    radial-gradient(130% 90% at 82% 8%, rgba(52, 211, 153, 0.09), transparent 58%),
+    #0a0a0c;
+}
+
+.synbio-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
+  align-items: center;
+  gap: clamp(2rem, 5vw, 5rem);
+  width: 100%;
+}
+
+.synbio-visual {
+  position: relative;
+  border-radius: var(--border-radius-xl);
+  overflow: hidden;
+  border: var(--edge-hairline);
+  background: linear-gradient(135deg, #f4f6f8, #dde4ea);
+  box-shadow: var(--shadow-lg);
+}
+
+.synbio-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 68vh;
+  object-fit: cover;
+}
+
+.synbio-visual-caption {
+  position: absolute;
+  left: var(--spacing-md);
+  bottom: var(--spacing-md);
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: rgba(10, 10, 12, 0.68);
+  backdrop-filter: blur(8px);
+  border: var(--edge-hairline);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.02em;
+}
+
+.synbio-copy {
+  text-align: left;
+}
+
+.synbio-copy h2 {
+  font-size: clamp(1.8rem, 3.4vw, 2.85rem);
+  color: var(--color-white);
+  margin-bottom: var(--spacing-md);
+}
+
+.synbio-lead {
+  color: var(--color-gray-600);
+  font-size: var(--font-size-lg);
+  line-height: 1.7;
+  max-width: 620px;
+  margin-bottom: var(--spacing-xl);
+}
+
+.synbio-lead strong {
+  color: var(--color-white);
+  font-weight: 600;
+}
+
+.synbio-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+}
+
+.synbio-card {
+  background: var(--surface-glass);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+  transition:
+    border-color 0.3s ease,
+    background 0.3s ease,
+    transform 0.3s ease;
+}
+
+.synbio-card:hover {
+  border-color: rgba(52, 211, 153, 0.35);
+  background: var(--surface-glass-strong);
+  transform: translateY(-3px);
+}
+
+.synbio-card-metric {
+  display: block;
+  color: var(--color-accent);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+
+.synbio-card h3 {
+  font-size: var(--font-size-base);
+  color: var(--color-white);
+  margin-bottom: 6px;
+}
+
+.synbio-card p {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-500);
+  line-height: 1.55;
+  margin-bottom: 0;
+}
+
+/* Apparition douce des deux colonnes à l'entrée dans le viewport. */
+.synbio-visual,
+.synbio-copy {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.8s ease,
+    transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.synbio-section.is-in-view .synbio-visual {
+  transition-delay: 0.05s;
+}
+
+.synbio-section.is-in-view .synbio-copy {
+  transition-delay: 0.16s;
+}
+
+.synbio-section.is-in-view .synbio-visual,
+.synbio-section.is-in-view .synbio-copy {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .synbio-visual,
+  .synbio-copy {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
 
 /* ==========================================
-   RESPONSIVE LAYOUT OVERRIDES 
+   RESPONSIVE LAYOUT OVERRIDES
    ========================================== */
 
 @media (max-width: 1023px) {
@@ -3902,6 +4082,7 @@ img {
 
   .hero-section,
   .features-section,
+  .synbio-section,
   .prediction-dashboard-section,
   .bio-conversion,
   .molecules {
@@ -3916,6 +4097,15 @@ img {
     padding: 20px 0 0 !important;
     height: auto;
     gap: var(--spacing-2xl);
+  }
+
+  .synbio-layout {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xl);
+  }
+
+  .synbio-image {
+    max-height: 42vh;
   }
 
   .hero-actions-group {
@@ -3977,134 +4167,3 @@ img {
     grid-template-columns: 1fr;
   }
 }
-
-/* ==========================================================================
-   Leaflet & Interactive Map Custom Styling
-   ========================================================================== */
-
-/* Leaflet Container overrides */
-.leaflet-container {
-  background: #111b19 !important;
-  font-family: inherit !important;
-}
-
-/* Control buttons (Zoom) styling matching dark tech aesthetic */
-.leaflet-bar {
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  box-shadow: none !important;
-  border-radius: var(--border-radius-md) !important;
-  overflow: hidden !important;
-}
-
-.leaflet-bar a,
-.leaflet-bar a:hover {
-  background-color: rgba(5, 5, 5, 0.75) !important;
-  color: var(--color-gray-900) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
-  width: 38px !important;
-  height: 38px !important;
-  line-height: 38px !important;
-  font-size: var(--font-size-xl) !important;
-  font-weight: 700 !important;
-  backdrop-filter: blur(12px) !important;
-  transition: all var(--transition-fast) ease !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-.leaflet-bar a:hover {
-  color: var(--color-primary-light) !important;
-  background-color: rgba(5, 5, 5, 0.9) !important;
-}
-
-.leaflet-bar a:last-child {
-  border-bottom: none !important;
-}
-
-/* Layers control switcher custom design */
-.leaflet-control-layers {
-  background: rgba(5, 5, 5, 0.8) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  border-radius: var(--border-radius-lg) !important;
-  color: var(--color-gray-900) !important;
-  backdrop-filter: blur(12px) !important;
-  font-size: var(--font-size-sm) !important;
-  box-shadow: var(--shadow-md) !important;
-}
-
-.leaflet-control-layers-toggle {
-  background-size: 20px 20px !important;
-  width: 40px !important;
-  height: 40px !important;
-}
-
-.leaflet-control-layers-expanded {
-  padding: var(--spacing-md) !important;
-  font-weight: 800;
-  text-transform: uppercase;
-  font-size: 11px !important;
-  letter-spacing: 0.5px;
-}
-
-.leaflet-control-layers-list label {
-  margin-bottom: var(--spacing-xs);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--color-gray-800);
-}
-
-.leaflet-control-layers-list label:hover {
-  color: var(--color-primary-light);
-}
-
-.leaflet-control-layers input[type="radio"] {
-  accent-color: var(--color-primary-light);
-  cursor: pointer;
-}
-
-/* Custom attribution panel */
-.leaflet-control-attribution {
-  background: rgba(0, 0, 0, 0.6) !important;
-  color: var(--color-gray-400) !important;
-  font-size: 10px !important;
-  backdrop-filter: blur(4px);
-}
-
-.leaflet-control-attribution a {
-  color: var(--color-primary-light) !important;
-}
-
-/* Custom Marker Styling - Golden glowing pin */
-.leaflet-custom-marker {
-  background: transparent !important;
-  border: none !important;
-}
-
-.custom-pin {
-  width: 28px;
-  height: 28px;
-  border: 3px solid #08080a;
-  border-radius: 50% 50% 50% 0;
-  background: var(--color-primary-light);
-  box-shadow:
-    0 0 0 6px rgba(245, 179, 77, 0.24),
-    0 18px 42px rgba(0, 0, 0, 0.5);
-  transform: rotate(-45deg);
-  position: relative;
-}
-
-.custom-pin::after {
-  content: '';
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  top: 50%;
-  left: 50%;
-  border-radius: 50%;
-  background: #08080a;
-  transform: translate(-50%, -50%);
-}
-
