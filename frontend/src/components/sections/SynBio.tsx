@@ -3,36 +3,9 @@
 import Image from 'next/image';
 import { useInView } from '@/hooks/useInView';
 
-const advantages = [
-  {
-    metric: '× moins cher',
-    title: 'Coût divisé',
-    description:
-      'Une réaction sans cellule (TXTL) et des réactifs synthétiques remplacent les analyses laboratoire lourdes : le coût par test chute drastiquement.',
-  },
-  {
-    metric: '30 min',
-    title: 'Résultat immédiat',
-    description:
-      'Le signal fluorescent du toehold switch se lit directement, sans envoi d’échantillon ni attente de plusieurs jours.',
-  },
-  {
-    metric: 'Format terrain',
-    title: 'Mobile et simple',
-    description:
-      'Un kit léger utilisable au bord du champ : plus besoin d’équipement analytique fixe ni de personnel spécialisé.',
-  },
-  {
-    metric: 'Niveau labo',
-    title: 'Précision conservée',
-    description:
-      'L’aptamère Z0/Z1 reste spécifique à la zéaralénone : on gagne en accessibilité sans sacrifier la fiabilité de la mesure.',
-  },
-];
-
 /**
  * Section éditoriale présentant l'apport de la biologie de synthèse : un test
- * radicalement moins cher, plus rapide et mobile, tout en restant précis.
+ * de terrain qui produit des données fiables pour nourrir la prédiction.
  */
 export function SynBio() {
   const { ref, isInView } = useInView<HTMLElement>({ threshold: 0.2, once: true });
@@ -54,7 +27,6 @@ export function SynBio() {
               className="synbio-image"
               sizes="(max-width: 900px) 90vw, 45vw"
             />
-            <span className="synbio-visual-caption">Terrain · collecte d'échantillons</span>
           </div>
           <div className="synbio-frame">
             <Image
@@ -65,28 +37,28 @@ export function SynBio() {
               className="synbio-image"
               sizes="(max-width: 900px) 90vw, 45vw"
             />
-            <span className="synbio-visual-caption">Toehold switch · biologie de synthèse</span>
           </div>
         </div>
 
         <div className="synbio-copy">
-          <h2>Un test de laboratoire, repensé pour le terrain</h2>
+          <h2>Un test de biologie synthétique pour collecter des données fiables</h2>
           <p className="synbio-lead">
-            Plutôt que d’envoyer les échantillons vers un laboratoire, Pure Graine embarque la
-            détection dans une réaction de biologie de synthèse. Résultat : un test{' '}
-            <strong>radicalement moins cher, plus rapide et mobile</strong>, qui garde la précision
-            d’une analyse classique.
+            Pure Graine a créé un test de terrain fondé sur la biologie synthétique pour mesurer la
+            contamination directement au plus près des parcelles. L’objectif n’est pas seulement
+            d’obtenir un résultat rapide : chaque analyse produit une donnée exploitable, précise et
+            contextualisée.
           </p>
-
-          <div className="synbio-grid">
-            {advantages.map((item) => (
-              <article className="synbio-card" key={item.title}>
-                <strong className="synbio-card-metric">{item.metric}</strong>
-                <h3>{item.title}</h3>
-                <p>{item.description}</p>
-              </article>
-            ))}
-          </div>
+          <p className="synbio-detail">
+            En multipliant ces mesures sur différents lots, cultures et conditions météo, le projet
+            peut constituer une base de données de grande qualité. Ces données pourront ensuite
+            alimenter un modèle capable d’estimer la probabilité de contamination avant que le risque
+            ne devienne critique.
+          </p>
+          <p className="synbio-detail">
+            Cette approche relie détection biologique et prédiction agronomique : aider les
+            agriculteurs à réduire les pertes, mieux décider quand agir, et limiter l’exposition des
+            consommateurs aux mycotoxines.
+          </p>
         </div>
       </div>
     </section>

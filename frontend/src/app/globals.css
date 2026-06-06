@@ -2751,25 +2751,15 @@ img {
   }
 
   .site-footer-content {
-    /* Empile le texte et les logos dans le footer sur mobile. */
-    flex-direction: column;
-    /* Aligne le contenu du footer à gauche sur mobile. */
-    align-items: flex-start;
+    /* Centre les logos dans le footer sur mobile. */
+    justify-content: center;
+    align-items: center;
   }
 
   .site-footer-logos {
-    /* Aligne les logos à gauche sous le texte sur mobile. */
-    justify-content: flex-start;
-    /* Conserve les trois logos sur une seule ligne sur mobile. */
-    flex-wrap: nowrap;
-    /* Réduit l'écart pour que les trois logos tiennent mieux. */
+    /* Réduit l'écart pour que les logos tiennent mieux sur mobile. */
+    justify-content: center;
     gap: var(--spacing-md);
-  }
-
-  .site-footer-logo {
-    /* Réduit légèrement les logos du footer sur mobile. */
-    width: min(68px, 20vw);
-    max-height: 68px;
   }
 
   .features-animation {
@@ -2933,7 +2923,6 @@ img {
 }
 
 .hero-section,
-.partners-section,
 .features-section,
 .synbio-section,
 .prediction-dashboard-section,
@@ -3849,26 +3838,19 @@ img {
 .site-footer {
   background: #000000 !important;
   border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
-  padding: 40px var(--spacing-xl);
+  padding: clamp(48px, 7vw, 76px) var(--spacing-xl);
   box-sizing: border-box;
+  scroll-snap-align: end;
+  scroll-snap-stop: always;
 }
 
 .site-footer-content {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  flex-wrap: wrap;
-  gap: var(--spacing-lg);
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-}
-
-.site-footer-content p {
-  color: var(--color-gray-500);
-  font-size: var(--font-size-xs);
-  margin-bottom: 0;
-  text-align: left;
 }
 
 .site-footer-content a {
@@ -3883,24 +3865,46 @@ img {
 .site-footer-logos {
   display: flex;
   align-items: center;
-  gap: var(--spacing-lg);
-  filter: grayscale(1);
-  opacity: 0.48;
-  transition: all 0.3s ease;
+  justify-content: center;
+  gap: clamp(1.15rem, 4vw, 2.6rem);
+  flex-wrap: wrap;
+  filter: none;
+  opacity: 1;
 }
 
-.site-footer-logos:hover {
-  filter: grayscale(0);
-  opacity: 0.85;
+.site-footer-logos a {
+  width: clamp(118px, 13vw, 150px);
+  aspect-ratio: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(14px, 2vw, 20px);
+  background: #f4f4f1;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  overflow: hidden;
+  transition:
+    transform 0.22s ease,
+    background 0.22s ease,
+    opacity 0.22s ease;
+}
+
+.site-footer-logos a:hover {
+  background: #ffffff;
+  opacity: 0.92;
+  transform: translateY(-3px);
 }
 
 .site-footer-logo {
-  transition: transform 0.2s ease;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
+  transition: transform 0.22s ease;
 }
 
-.site-footer-logo:hover {
-  transform: scale(1.05);
+.site-footer-logo-hackathon {
+  object-fit: cover;
+  transform: scale(1.68);
 }
 
 /* General Utilities & Badges */
@@ -3974,20 +3978,6 @@ img {
   max-height: 32vh;
 }
 
-.synbio-visual-caption {
-  position: absolute;
-  left: var(--spacing-md);
-  bottom: var(--spacing-md);
-  padding: 6px 13px;
-  border-radius: 999px;
-  background: rgba(10, 10, 12, 0.68);
-  backdrop-filter: blur(8px);
-  border: var(--edge-hairline);
-  color: rgba(255, 255, 255, 0.85);
-  font-size: var(--font-size-xs);
-  letter-spacing: 0.02em;
-}
-
 .synbio-copy {
   text-align: left;
 }
@@ -4011,49 +4001,12 @@ img {
   font-weight: 600;
 }
 
-.synbio-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-md);
-}
-
-.synbio-card {
-  background: var(--surface-glass);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: var(--border-radius-lg);
-  padding: var(--spacing-lg);
-  transition:
-    border-color 0.3s ease,
-    background 0.3s ease,
-    transform 0.3s ease;
-}
-
-.synbio-card:hover {
-  border-color: rgba(52, 211, 153, 0.35);
-  background: var(--surface-glass-strong);
-  transform: translateY(-3px);
-}
-
-.synbio-card-metric {
-  display: block;
-  color: var(--color-accent);
-  font-size: var(--font-size-xl);
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  margin-bottom: 4px;
-}
-
-.synbio-card h3 {
-  font-size: var(--font-size-base);
-  color: var(--color-white);
-  margin-bottom: 6px;
-}
-
-.synbio-card p {
-  font-size: var(--font-size-sm);
+.synbio-detail {
   color: var(--color-gray-500);
-  line-height: 1.55;
-  margin-bottom: 0;
+  font-size: var(--font-size-base);
+  line-height: 1.75;
+  max-width: 620px;
+  margin-bottom: var(--spacing-md);
 }
 
 /* Apparition douce des deux colonnes à l'entrée dans le viewport. */
@@ -4083,134 +4036,6 @@ img {
 @media (prefers-reduced-motion: reduce) {
   .synbio-visual,
   .synbio-copy {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-}
-
-/* PARTNERS / PROJECT SECTION */
-.partners-section {
-  background: #0a0a0c;
-  text-align: center;
-}
-
-/* Fond champ de blé fortement flouté + assombri : couleur blés mais discrète,
-   juste assez pour distinguer cette section du hero. */
-.partners-bg {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background-image: url('/images/leon-mcgregor-Zk3ZUpzSp8c-unsplash.jpg');
-  background-size: cover;
-  background-position: center;
-  filter: blur(30px) saturate(0.72) brightness(0.72);
-  transform: scale(1.18); /* évite les bords transparents dus au flou */
-  pointer-events: none;
-}
-
-/* Voile sombre par-dessus le fond flou : laisse transparaître la couleur blés
-   tout en gardant le texte lisible et le ton sobre. Fondu sombre haut/bas pour
-   raccorder avec les sections voisines. */
-.partners-bg::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(75% 65% at 50% 48%, rgba(10, 10, 12, 0.18), rgba(10, 10, 12, 0.5) 100%),
-    linear-gradient(180deg, rgba(10, 10, 12, 0.92) 0%, rgba(10, 10, 12, 0.3) 26%, rgba(10, 10, 12, 0.3) 74%, rgba(10, 10, 12, 0.92) 100%);
-}
-
-.partners-content {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  max-width: 760px;
-}
-
-.partners-title {
-  font-size: clamp(1.9rem, 4vw, 3rem);
-  font-weight: 600;
-  color: var(--color-white);
-  letter-spacing: -0.018em;
-  margin-bottom: var(--spacing-md);
-}
-
-.partners-lead {
-  color: rgba(255, 255, 255, 0.74);
-  font-size: var(--font-size-lg);
-  line-height: 1.7;
-  max-width: 620px;
-  margin-bottom: var(--spacing-2xl);
-}
-
-.partners-logos {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(1.5rem, 4vw, 3rem);
-  flex-wrap: wrap;
-}
-
-/* Pastille claire derrière chaque logo (le logo iGEM comporte du noir → illisible
-   sur fond sombre). */
-.partner-logo-chip {
-  width: clamp(120px, 16vw, 160px);
-  height: clamp(120px, 16vw, 160px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: clamp(16px, 2vw, 24px);
-  background: #f6f7f9;
-  border-radius: var(--border-radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: var(--shadow-md);
-  transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease;
-}
-
-.partner-logo-chip:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-}
-
-.partner-logo {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-/* Apparition douce à l'entrée dans le viewport. */
-.partners-content > * {
-  opacity: 0;
-  transform: translateY(20px);
-  transition:
-    opacity 0.7s ease,
-    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.partners-section.is-in-view .partners-content > * {
-  opacity: 1;
-  transform: none;
-}
-
-.partners-section.is-in-view .partners-content > *:nth-child(2) {
-  transition-delay: 0.08s;
-}
-
-.partners-section.is-in-view .partners-content > *:nth-child(3) {
-  transition-delay: 0.16s;
-}
-
-.partners-section.is-in-view .partners-content > *:nth-child(4) {
-  transition-delay: 0.24s;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .partners-content > * {
     opacity: 1;
     transform: none;
     transition: none;
@@ -4506,7 +4331,6 @@ img {
   }
 
   .hero-section,
-  .partners-section,
   .features-section,
   .synbio-section,
   .prediction-dashboard-section,
