@@ -15,6 +15,22 @@ dist/
 build/
 .eggs/
 
+# Node / frontend
+node_modules/
+.pnp
+.pnp.js
+coverage/
+.next/
+out/
+tsconfig.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.vercel/
+*.pem
+public/mol/*.pse
+frontend/public/mol/*.pse
+
 # Virtual environments
 .venv/
 venv/
