@@ -352,16 +352,31 @@ export function PredictionMap() {
     [currentDate, selectedFungus, selectedLocation, selectedToxinConfig, weather]
   );
 
-  const handleLocationSelect = (location: MapLocation) => {
-    setSelectedLocation(location);
-    setHasSubmitted(false);
-    setPredictionResult(null);
-  };
-
   const [predictionResult, setPredictionResult] = useState<{
     contamination_probability: number;
     accuracy: number;
   } | null>(null);
+  const [locationName, setLocationName] = useState<{ country: string; region: string } | null>(null);
+
+  const handleLocationSelect = async (location: MapLocation) => {
+    setSelectedLocation(location);
+    setHasSubmitted(false);
+    setPredictionResult(null);
+    setLocationName(null);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.lat}&lon=${location.lng}`,
+        { headers: { 'Accept-Language': 'fr' } }
+      );
+      const data = await res.json();
+      setLocationName({
+        country: data.address?.country ?? '',
+        region: data.address?.state ?? data.address?.county ?? '',
+      });
+    } catch {
+      // geocoding is best-effort
+    }
+  };
 
   const launchSimulation = async () => {
     if (!selectedLocation) return;
@@ -478,15 +493,20 @@ export function PredictionMap() {
 
               <div className="prediction-location-info">
                 <span>Coordonnées de la parcelle</span>
-                <strong>
-                  {selectedLocation
-                    ? `${formatCoordinate(selectedLocation.lat, 'N', 'S')} · ${formatCoordinate(
-                        selectedLocation.lng,
-                        'E',
-                        'O'
-                      )}`
-                    : 'Cliquez sur la carte'}
-                </strong>
+                {selectedLocation ? (
+                  <>
+                    <strong>
+                      {locationName
+                        ? `${locationName.country}${locationName.region ? ` · ${locationName.region}` : ''}`
+                        : '…'}
+                    </strong>
+                    <small>
+                      {formatCoordinate(selectedLocation.lat, 'N', 'S')} · {formatCoordinate(selectedLocation.lng, 'E', 'O')}
+                    </small>
+                  </>
+                ) : (
+                  <strong>Cliquez sur la carte</strong>
+                )}
                 <small>Date d&apos;analyse: {today}</small>
               </div>
 

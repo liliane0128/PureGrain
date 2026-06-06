@@ -1,8 +1,12 @@
 """
-Mock aptamer/biosensor model service.
-Reads a weather CSV file produced by /map/weather and writes a prediction result file.
+Contamination prediction service.
 
-Replace the _compute() function body with a real model call once the model artefact is ready — the file I/O and API surface stay the same.
+- run()         : legacy file-based flow (used by /map/weather confirm=true)
+- run_unified() : unified flow for /predict/full — takes weather dict + real ZEN
+                  probability from the Random Forest, adds DON & FUM mock models,
+                  saves CSV + result JSON, returns full payload.
+
+Replace _compute_don / _compute_fum with real model calls once artefacts are ready.
 """
 import json
 import hashlib
@@ -13,75 +17,164 @@ from pathlib import Path
 DATA_DIR = Path(__file__).parent.parent / "api" / "data"
 
 
-def _compute(weather_rows: list[dict]) -> tuple[float, float]:
-    """
-    Biologically-plausible mock for ZEN contamination probability and model accuracy.
+# ── helpers ────────────────────────────────────────────────────────────────
 
-    Fusarium (ZEN producer) risk drivers:
-      - Temperature 15-25 °C  (optimal growth window)
-      - Relative humidity > 60 %
-      - Precipitation (wet conditions)
+def _seed(lat: float, lon: float) -> int:
+    return int(hashlib.md5(f"{lat:.4f}{lon:.4f}".encode()).hexdigest(), 16)
 
-    Returns (contamination_probability_pct, accuracy_pct).
-    """
-    if not weather_rows:
-        return 0.0, 0.0
 
-    row = weather_rows[-1]  # use the most recent day
-
+def _zen_mock(row: dict, seed_int: int) -> float:
+    """ZEN mock (used only by the legacy run() path, not by run_unified)."""
     temp = float(row.get("temperature_2m_mean") or 20.0)
     humidity = float(row.get("relative_humidity_2m_mean") or 50.0)
     precip = float(row.get("precipitation_sum") or 0.0)
-    lat = float(row.get("latitude") or 0.0)
-    lon = float(row.get("longitude") or 0.0)
-
     temp_factor = max(0.0, 1.0 - abs(temp - 20.0) / 20.0)
     humidity_factor = min(1.0, max(0.0, (humidity - 40.0) / 50.0))
     precip_factor = min(1.0, precip / 8.0)
-
     prob = 0.35 * temp_factor + 0.45 * humidity_factor + 0.20 * precip_factor
-
-    # Reproducible noise seeded by location so the same field always returns the same score
-    seed_int = int(hashlib.md5(f"{lat:.4f}{lon:.4f}".encode()).hexdigest(), 16)
     noise = ((seed_int % 1000) / 1000.0 - 0.5) * 0.06
-    prob = max(0.0, min(1.0, prob + noise))
+    return max(0.0, min(1.0, prob + noise))
 
-    # Mock accuracy: stable at ~88 % ± small location-based jitter
-    accuracy = 85.0 + (seed_int % 700) / 100.0  # range 85.0 – 92.0
 
-    return round(prob * 100, 1), round(accuracy, 1)
+def _compute_don(row: dict, seed_int: int) -> float:
+    """
+    DON (Déoxynivalénol) mock — Fusarium graminearum / culmorum.
+    Optimal window: 12-22 °C, more cold-tolerant than ZEN, high humidity critical.
+    """
+    temp = float(row.get("temperature_2m_mean") or 17.0)
+    humidity = float(row.get("relative_humidity_2m_mean") or 50.0)
+    precip = float(row.get("precipitation_sum") or 0.0)
+    temp_factor = max(0.0, 1.0 - abs(temp - 17.0) / 20.0)
+    humidity_factor = min(1.0, max(0.0, (humidity - 45.0) / 45.0))
+    precip_factor = min(1.0, precip / 6.0)
+    prob = 0.30 * temp_factor + 0.50 * humidity_factor + 0.20 * precip_factor
+    noise = ((seed_int % 800) / 800.0 - 0.5) * 0.08
+    return max(0.0, min(1.0, prob + noise))
 
+
+def _compute_fum(row: dict, seed_int: int) -> float:
+    """
+    Fumonisines mock — Fusarium verticillioides / proliferatum.
+    Optimal window: 20-30 °C, less humidity-sensitive, maize-specific.
+    """
+    temp = float(row.get("temperature_2m_mean") or 25.0)
+    humidity = float(row.get("relative_humidity_2m_mean") or 50.0)
+    precip = float(row.get("precipitation_sum") or 0.0)
+    temp_factor = max(0.0, 1.0 - abs(temp - 25.0) / 18.0)
+    humidity_factor = min(1.0, max(0.0, (humidity - 35.0) / 55.0))
+    precip_factor = min(1.0, precip / 10.0)
+    prob = 0.45 * temp_factor + 0.35 * humidity_factor + 0.20 * precip_factor
+    noise = ((seed_int % 600) / 600.0 - 0.5) * 0.07
+    return max(0.0, min(1.0, prob + noise))
+
+
+def _risk(prob: float) -> str:
+    if prob < 0.33:
+        return "GREEN"
+    if prob < 0.66:
+        return "ORANGE"
+    return "RED"
+
+
+# ── public API ─────────────────────────────────────────────────────────────
 
 def run(weather_file: str) -> dict:
     """
-    Read `weather_file` from the data directory, run the mock model,
-    write a result JSON next to the source file, and return the payload.
-
-    Raises FileNotFoundError if the source file does not exist.
+    Legacy file-based flow: read CSV → ZEN mock → write result JSON.
+    Called by POST /map/weather with confirm=true.
     """
     source_path = DATA_DIR / weather_file
     if not source_path.exists():
         raise FileNotFoundError(f"Weather file not found: {weather_file}")
 
     df = pd.read_csv(source_path)
-    weather_rows = df.to_dict(orient="records")
+    row = df.to_dict(orient="records")[-1]
+    lat = float(row.get("latitude") or 0.0)
+    lon = float(row.get("longitude") or 0.0)
+    s = _seed(lat, lon)
 
-    contamination_probability, accuracy = _compute(weather_rows)
+    zen_prob = _zen_mock(row, s)
+    accuracy = round(85.0 + (s % 700) / 100.0, 1)
 
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    stem = source_path.stem  # e.g. weather_48.50000_2.30000_20260606T170516Z
-    result_filename = f"prediction_result_{stem}_{timestamp}.json"
-    result_path = DATA_DIR / result_filename
-
+    result_filename = f"prediction_result_{source_path.stem}_{timestamp}.json"
     result = {
-        "contamination_probability": contamination_probability,
+        "contamination_probability": round(zen_prob * 100, 1),
         "accuracy": accuracy,
         "source_file": weather_file,
         "result_file": result_filename,
         "generated_at": timestamp,
     }
+    with open(DATA_DIR / result_filename, "w", encoding="utf-8") as f:
+        json.dump(result, f, indent=2)
+    return result
 
-    with open(result_path, "w", encoding="utf-8") as f:
+
+def run_unified(
+    weather: dict,
+    lat: float,
+    lon: float,
+    zen_probability: float,
+    zen_roc_auc: float,
+) -> dict:
+    """
+    Unified flow for POST /predict/full.
+
+    Parameters
+    ----------
+    weather       : daily weather dict from weather_model._fetch_daily_weather
+    lat, lon      : parcel coordinates
+    zen_probability : 0-1 probability from the real Random Forest
+    zen_roc_auc   : ROC-AUC of the ZEN model (0-1)
+
+    Returns the full prediction payload and writes CSV + result JSON to api/data/.
+    """
+    s = _seed(lat, lon)
+    row = {**weather, "latitude": lat, "longitude": lon}
+
+    don_prob = _compute_don(row, s)
+    fum_prob = _compute_fum(row, s)
+
+    # Overall: weighted average (ZEN most established, DON second, FUM third)
+    overall_prob = 0.40 * zen_probability + 0.35 * don_prob + 0.25 * fum_prob
+
+    # Accuracy: ZEN uses real ROC-AUC, DON/FUM are mock
+    don_acc = 85.0 + (s % 500) / 100.0
+    fum_acc = 82.0 + (s % 600) / 100.0
+    overall_acc = 0.40 * (zen_roc_auc * 100) + 0.35 * don_acc + 0.25 * fum_acc
+
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+    # Save weather CSV
+    csv_filename = f"weather_{lat:.5f}_{lon:.5f}_{timestamp}.csv"
+    pd.DataFrame([{
+        "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        **{k: weather.get(k) for k in [
+            "temperature_2m_mean", "temperature_2m_max", "temperature_2m_min",
+            "relative_humidity_2m_mean", "precipitation_sum",
+        ]},
+        "latitude": lat,
+        "longitude": lon,
+    }]).to_csv(DATA_DIR / csv_filename, index=False, encoding="utf-8")
+
+    # Build result
+    result_filename = f"prediction_result_{lat:.5f}_{lon:.5f}_{timestamp}.json"
+    result = {
+        "contamination_probability": round(overall_prob * 100, 1),
+        "toxins": {
+            "ZEN": round(zen_probability * 100, 1),
+            "DON": round(don_prob * 100, 1),
+            "FUM": round(fum_prob * 100, 1),
+        },
+        "accuracy": round(overall_acc, 1),
+        "risk_level": _risk(overall_prob),
+        "weather": weather,
+        "model_roc_auc": round(zen_roc_auc, 3),
+        "source_file": csv_filename,
+        "result_file": result_filename,
+        "generated_at": timestamp,
+    }
+    with open(DATA_DIR / result_filename, "w", encoding="utf-8") as f:
         json.dump(result, f, indent=2)
 
     return result

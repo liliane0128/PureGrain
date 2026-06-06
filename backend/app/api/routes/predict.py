@@ -192,6 +192,52 @@ async def predict_sensor(req: SensorPredictionRequest):
     return SensorPredictionResponse(**result)
 
 
+class FullPredictionResponse(BaseModel):
+    contamination_probability: float
+    toxins: dict[str, float]
+    accuracy: float
+    risk_level: str
+    weather: dict[str, float]
+    model_roc_auc: float
+    source_file: str
+    result_file: str
+    generated_at: str
+
+
+@router.post("/full", response_model=FullPredictionResponse)
+async def predict_full(req: GeoPredictionRequest):
+    """
+    Unified endpoint: fetches weather → runs ZEN (real Random Forest) + DON & FUM (mock)
+    → saves CSV + result JSON → returns full payload.
+
+    contamination_probability : weighted average of ZEN / DON / FUM (%)
+    toxins                    : per-toxin breakdown (%)
+    accuracy                  : weighted accuracy (ZEN real ROC-AUC, DON/FUM mock)
+    """
+    try:
+        ml_result = await weather_model.predict_geo(
+            lat=req.lat,
+            lon=req.lon,
+            crop_group=req.crop_group,
+            sampling_point=req.sampling_point,
+        )
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=502, detail=f"Open-Meteo request failed: {e}")
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+    result = contamination.run_unified(
+        weather=ml_result["weather"],
+        lat=req.lat,
+        lon=req.lon,
+        zen_probability=ml_result["zen_probability"],
+        zen_roc_auc=ml_result["model_roc_auc"],
+    )
+    return FullPredictionResponse(**result)
+
+
 @router.post("/batch", response_model=BatchPredictionResponse)
 async def predict_batch(
     file: UploadFile = File(..., description="CSV — same format as weather_added_1.csv"),
