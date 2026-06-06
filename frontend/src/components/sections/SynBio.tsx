@@ -72,7 +72,7 @@ export function SynBio() {
         <div className="synbio-copy">
           <h2>Un test de laboratoire, repensé pour le terrain</h2>
           <p className="synbio-lead">
-            Plutôt que d’envoyer les échantillons vers un laboratoire, Pure Graine embarque la
+            Plutôt que d’envoyer les échantillons vers un laboratoire, Pure Grain embarque la
             détection dans une réaction de biologie de synthèse. Résultat : un test{' '}
             <strong>radicalement moins cher, plus rapide et mobile</strong>, qui garde la précision
             d’une analyse classique.

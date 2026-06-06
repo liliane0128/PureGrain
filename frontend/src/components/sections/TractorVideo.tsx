@@ -17,7 +17,7 @@ export function TractorVideo() {
     <video
       ref={slowDownVideo}
       src="/videos/tracteur.mp4"
-      aria-label="Visualisation agricole Pure Graine"
+      aria-label="Visualisation agricole Pure Grain"
       autoPlay
       loop
       muted

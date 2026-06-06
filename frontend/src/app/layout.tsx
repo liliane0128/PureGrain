@@ -2,12 +2,12 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Pure Graine - Détection ZEN dans les céréales',
+  title: 'Pure Grain - Détection ZEN dans les céréales',
   description:
     'Projet du Hackathon #YouthForBioeconomy dédié à la détection rapide de la zéaralénone par aptamère, toehold switch fluorescent et LAMP Fusarium.',
   keywords: ['zéaralénone', 'ZEN', 'aptamère toehold switch', 'Fusarium céréales'],
   openGraph: {
-    title: 'Pure Graine - Détection ZEN dans les céréales',
+    title: 'Pure Grain - Détection ZEN dans les céréales',
     description:
       'Identifier rapidement la zéaralénone ou sa source grâce à un système aptamère Z0/Z1, un toehold switch fluorescent et une piste LAMP ciblant Fusarium.',
     type: 'website',

@@ -1,7 +1,7 @@
 {
-  "name": "pure-graine-app",
+  "name": "pure-grain-app",
   "version": "1.0.0",
-  "description": "Site vitrine Pure Graine pour la détection rapide de la zéaralénone dans les céréales",
+  "description": "Site vitrine Pure Grain pour la détection rapide de la zéaralénone dans les céréales",
   "main": "index.js",
   "scripts": {
     "dev": "next dev",

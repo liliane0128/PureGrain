@@ -1,6 +1,6 @@
-# Pure Graine
+# Pure Grain
 
-**Site vitrine Next.js pour Pure Graine, projet iGEM Sorbonne Université dédié à la détection rapide de la zéaralénone (ZEN) dans les céréales.**
+**Site vitrine Next.js pour Pure Grain, projet iGEM Sorbonne Université dédié à la détection rapide de la zéaralénone (ZEN) dans les céréales.**
 
 Le projet scientifique vise à identifier rapidement ZEN ou sa source, Fusarium, avec trois pistes complémentaires :
 
@@ -55,7 +55,7 @@ npm run format:check   # Vérifie le formatage Prettier
 
 ### Hero
 
-Présente Pure Graine comme projet de détection ZEN dans les céréales.
+Présente Pure Grain comme projet de détection ZEN dans les céréales.
 
 ### Science
 

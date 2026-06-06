@@ -38,7 +38,7 @@ export default function Home() {
       <footer className="site-footer">
         <div className="container site-footer-content">
           <p>
-            Pure Graine © 2026 · Projet développé pour le{' '}
+            Pure Grain © 2026 · Projet développé pour le{' '}
             <a
               href="https://www.universite-paris-saclay.fr/evenements/hackathon-youthforbioeconomy-2026"
               target="_blank"

@@ -250,6 +250,7 @@ img {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-sm);
+  transform: translate(-12px, 8px);
   color: var(--color-white);
   font-weight: 700;
   font-size: var(--font-size-base);
@@ -263,22 +264,17 @@ img {
 }
 
 .site-brand-mark {
-  width: 36px;
-  height: 36px;
+  width: 68.5584px;
+  height: 68.5584px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--border-radius-md);
-  background: rgba(255, 255, 255, 0.1);
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .site-brand-logo {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  padding: 4px;
 }
 
 .site-nav {
@@ -2312,7 +2308,7 @@ img {
   font-size: var(--font-size-sm);
 }
 
-/* PURE GRAINE DARK THEME */
+/* PURE GRAIN DARK THEME */
 .hero-video-section {
   /* La vidéo devient une section éditoriale, pas un plein écran d'ouverture. */
   position: relative;
@@ -4407,6 +4403,33 @@ img {
   font-size: var(--font-size-xs);
   color: var(--color-gray-500);
   font-variant-numeric: tabular-nums;
+}
+
+.sim-contamination-card {
+  min-height: 100%;
+  justify-content: center;
+}
+
+.sim-contamination-value {
+  display: block;
+  font-size: clamp(4.5rem, 10vw, 8rem);
+  line-height: 0.9;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.sim-contamination-meter {
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.sim-contamination-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.4s ease;
 }
 
 .sim-risk-bars {

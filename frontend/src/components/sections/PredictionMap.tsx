@@ -16,11 +16,6 @@ const toxinTargets = [
 type ToxinTarget = (typeof toxinTargets)[number];
 type ToxinLabel = ToxinTarget['label'];
 
-type CurvePoint = {
-  day: number;
-  value: number;
-};
-
 // Relevé météo de la parcelle (aléatoire pour l'instant, en attendant le backend).
 type WeatherInputs = {
   temperature: number;
@@ -63,15 +58,6 @@ const RISK_META: Record<RiskLevel, { label: string; color: string }> = {
   red: { label: 'Risque élevé', color: '#f87171' },
 };
 
-type ChartProps = {
-  label: string;
-  pill: string;
-  legend: string;
-  points: CurvePoint[];
-  threshold?: number;
-  unit: string;
-};
-
 function formatCoordinate(value: number, positiveSuffix: string, negativeSuffix: string) {
   return `${Math.abs(value).toFixed(4)}° ${value >= 0 ? positiveSuffix : negativeSuffix}`;
 }
@@ -93,29 +79,6 @@ function addDays(date: Date, days: number) {
   nextDate.setDate(nextDate.getDate() + days);
 
   return nextDate;
-}
-
-// Courbe lissée (Catmull-Rom → Bézier) pour un rendu doux façon graphique bio.
-function smoothPath(points: { x: number; y: number }[]) {
-  if (points.length < 2) {
-    return '';
-  }
-
-  let path = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
-
-  for (let index = 0; index < points.length - 1; index += 1) {
-    const p0 = points[index - 1] ?? points[index];
-    const p1 = points[index];
-    const p2 = points[index + 1];
-    const p3 = points[index + 2] ?? p2;
-    const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = p1.y + (p2.y - p0.y) / 6;
-    const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = p2.y - (p3.y - p1.y) / 6;
-    path += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)} ${cp2x.toFixed(1)} ${cp2y.toFixed(1)} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
-  }
-
-  return path;
 }
 
 function buildPrediction(
@@ -236,96 +199,6 @@ function buildPrediction(
     risk: { level, score: riskScore, probabilities, storageRecommendation, topFactors },
   };
 }
-
-// Reproduit exactement l'UI du graphique « Réponse fluorescente » (BioConversion) :
-// même carte, en-tête + pastille, grille, axe, courbe à halo et légende.
-function PredictionChart({ label, pill, legend, points, threshold, unit }: ChartProps) {
-  const width = 760;
-  const height = 470;
-  const padding = 46;
-  const values = points.map((point) => point.value);
-  const maxValue = Math.max(...values, threshold ?? 0, 1);
-  const plotWidth = width - padding * 2;
-  const plotHeight = height - padding * 2;
-  const coordinates = points.map((point, index) => {
-    const x = padding + (index / Math.max(points.length - 1, 1)) * plotWidth;
-    const y = height - padding - (point.value / maxValue) * plotHeight;
-
-    return { ...point, x, y };
-  });
-  const linePath = smoothPath(coordinates);
-  const axisPath = `M ${padding} ${padding} V ${height - padding} H ${width - padding}`;
-  const gridLines = [0.25, 0.5, 0.75].map((fraction) => padding + fraction * plotHeight);
-  const thresholdY =
-    threshold === undefined ? null : height - padding - (threshold / maxValue) * plotHeight;
-  const lastPoint = coordinates[coordinates.length - 1];
-  const lastDay = lastPoint?.day ?? 33;
-
-  return (
-    <div className="bio-absorption-card">
-      <div className="bio-absorption-header">
-        <span>{label}</span>
-        <strong>{pill}</strong>
-      </div>
-
-      <div className="bio-absorption-chart">
-        <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={label}>
-          <g className="bio-chart-grid">
-            {gridLines.map((y) => (
-              <line key={y} x1={padding} y1={y} x2={width - padding} y2={y} />
-            ))}
-          </g>
-          <path className="bio-chart-axis" d={axisPath} />
-          {thresholdY !== null && (
-            <>
-              <line
-                className="prediction-chart-threshold"
-                x1={padding}
-                y1={thresholdY}
-                x2={width - padding}
-                y2={thresholdY}
-              />
-              <text className="bio-chart-label" x={padding + 8} y={Math.max(thresholdY - 10, 20)}>
-                seuil {threshold} {unit}
-              </text>
-            </>
-          )}
-          <path className="sim-chart-curve" d={linePath} />
-          {lastPoint && (
-            <text
-              className="bio-chart-value bio-chart-value-living"
-              x={Math.min(lastPoint.x, width - padding - 4)}
-              y={Math.max(lastPoint.y - 16, 22)}
-              textAnchor="end"
-            >
-              {lastPoint.value} {unit} à J+{lastDay}
-            </text>
-          )}
-          <text className="bio-chart-label" x={padding} y={height - 14}>
-            Aujourd’hui
-          </text>
-          <text className="bio-chart-label" x={width - padding} y={height - 14} textAnchor="end">
-            J+{lastDay}
-          </text>
-        </svg>
-      </div>
-
-      <div className="bio-absorption-legend">
-        <span>
-          <i className="bio-legend-living" />
-          {legend}
-        </span>
-        {threshold !== undefined && (
-          <span>
-            <i className="sim-legend-threshold" />
-            Seuil réglementaire
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
 
 export function PredictionMap() {
   const [selectedFungus, setSelectedFungus] = useState(fungalTargets[0]);
@@ -451,19 +324,7 @@ export function PredictionMap() {
   const displayLevel: RiskLevel = mlResult?.riskLevel ?? risk?.level ?? 'green';
   const riskMeta = RISK_META[displayLevel];
   const displayScore = mlResult ? mlResult.zenProbability : (risk?.score ?? 0);
-  const displayProbabilities: Record<RiskLevel, number> = mlResult
-    ? {
-        red: mlResult.zenProbability ** 2,
-        orange: 2 * mlResult.zenProbability * (1 - mlResult.zenProbability),
-        green: (1 - mlResult.zenProbability) ** 2,
-      }
-    : risk?.probabilities ?? { green: 1, orange: 0, red: 0 };
-  const displayStorageReco =
-    displayLevel === 'red'
-      ? 'Séchage immédiat ou tri du lot avant tout stockage'
-      : displayLevel === 'orange'
-        ? 'Ventilation renforcée et nouveau contrôle sous 7 jours'
-        : 'Stockage standard, surveillance légère suffisante';
+  const contaminationProbability = Math.round(clamp(displayScore, 0, 1) * 100);
 
   const weatherCards = [
     { key: 'temp', Icon: Thermometer, value: weather.temperature, unit: ' °C', label: 'Température', color: '#f5b34d' },
@@ -590,11 +451,11 @@ export function PredictionMap() {
         </div>
       </section>
 
-      {/* Section résultats : météo choisie + sorties du modèle */}
+      {/* Section résultats : météo choisie + probabilité du modèle */}
       <section id="simulation-results" className="simulation-results-section">
         <div className="container sim-results-inner">
           <header className="sim-results-header">
-            <h2>Météo, risque et trajectoire de contamination</h2>
+            <h2>Météo et probabilité de contamination</h2>
           </header>
 
           {hasSubmitted && prediction ? (
@@ -616,79 +477,34 @@ export function PredictionMap() {
                     </div>
                   ))}
                 </div>
-                <p className="sim-weather-context">
-                  Récolte estimée : <strong>{prediction.harvestDate}</strong>
-                </p>
               </aside>
 
               <div className="sim-output">
-                <div className="sim-risk-card" style={{ borderColor: `${riskMeta.color}55` }}>
+                <div
+                  className="sim-risk-card sim-contamination-card"
+                  style={{
+                    borderColor: `${riskMeta.color}80`,
+                    boxShadow: `0 0 0 1px ${riskMeta.color}18`,
+                  }}
+                >
                   <div className="sim-risk-head">
                     <span className="sim-risk-dot" style={{ background: riskMeta.color }} />
-                    <strong style={{ color: riskMeta.color }}>{riskMeta.label}</strong>
-                    <span className="sim-risk-score">score {Math.round(displayScore * 100)}/100</span>
-                    {mlResult?.fromBackend && (
-                      <span className="sim-risk-ml-badge">ML · ROC-AUC {mlResult.rocAuc}</span>
-                    )}
+                    <strong>Probabilité de contamination</strong>
+                    <span className="sim-risk-score" style={{ color: riskMeta.color }}>
+                      {riskMeta.label}
+                    </span>
                   </div>
-                  <div className="sim-risk-bars">
-                    {(['green', 'orange', 'red'] as const).map((key) => (
-                      <div className="sim-risk-bar" key={key}>
-                        <span className="sim-risk-bar-label">{RISK_META[key].label}</span>
-                        <span className="sim-risk-bar-track">
-                          <span
-                            className="sim-risk-bar-fill"
-                            style={{
-                              width: `${Math.round(displayProbabilities[key] * 100)}%`,
-                              background: RISK_META[key].color,
-                            }}
-                          />
-                        </span>
-                        <span className="sim-risk-bar-value">
-                          {Math.round(displayProbabilities[key] * 100)}%
-                        </span>
-                      </div>
-                    ))}
+                  <strong className="sim-contamination-value" style={{ color: riskMeta.color }}>
+                    {contaminationProbability}%
+                  </strong>
+                  <div className="sim-contamination-meter" aria-hidden="true">
+                    <span
+                      style={{
+                        width: `${contaminationProbability}%`,
+                        background: riskMeta.color,
+                      }}
+                    />
                   </div>
-                  <p className="sim-risk-reco">{displayStorageReco}</p>
-                  <div className="sim-risk-factors">
-                    {risk?.topFactors.map((factor) => (
-                      <span className="sim-factor-chip" key={factor}>
-                        {factor}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="sim-numbers-row">
-                  <div className="result-number-box">
-                    <span>Contamination estimée</span>
-                    <strong>{prediction.contaminationUgKg} µg/kg</strong>
-                    <small>Seuil suivi : {prediction.thresholdUgKg} µg/kg</small>
-                  </div>
-                  <div className="result-number-box">
-                    <span>Alerte dépassement</span>
-                    <strong className="text-warning">{prediction.thresholdDate}</strong>
-                    <small>{prediction.thresholdLabel}</small>
-                  </div>
-                </div>
-
-                <div className="sim-charts">
-                  <PredictionChart
-                    label={`Contamination fongique (${selectedFungus})`}
-                    pill="%"
-                    legend="Charge fongique estimée"
-                    points={prediction.fungalCurve}
-                    unit="%"
-                  />
-                  <PredictionChart
-                    label={`Contamination en ${selectedToxin}`}
-                    pill="µg/kg"
-                    legend="Contamination prévue"
-                    points={prediction.toxinCurve}
-                    threshold={prediction.thresholdUgKg}
-                    unit="µg/kg"
-                  />
                 </div>
               </div>
             </div>
@@ -698,7 +514,7 @@ export function PredictionMap() {
               <strong>En attente d&apos;une simulation</strong>
               <p>
                 Localisez une parcelle sur la carte ci-dessus et lancez la simulation pour afficher
-                ici la météo et les courbes de sortie.
+                ici la météo et la probabilité de contamination.
               </p>
               <a className="btn btn-secondary" href="#prediction-map">
                 Revenir à la carte
