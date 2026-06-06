@@ -10,6 +10,7 @@ from app.db.session import get_db
 from app.db.models.imported_record import ImportedRecord
 from app.db.models.prediction_result import Prediction
 from app.services import weather_model
+from app.services import contamination
 
 router = APIRouter(prefix="/predict", tags=["prediction"])
 
@@ -132,6 +133,63 @@ async def predict_geo(
         model_roc_auc=ml_result["model_roc_auc"],
         historical=historical,
     )
+
+
+class SensorPredictionRequest(BaseModel):
+    weather_file: str | None = Field(
+        None,
+        description="Filename in api/data/, e.g. 'weather_48.50000_2.30000_20260606T170516Z.json'",
+    )
+    lat: float | None = Field(None, ge=-90, le=90, description="Auto-find latest file for these coords")
+    lon: float | None = Field(None, ge=-180, le=180)
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {"lat": 48.5, "lon": 2.3}
+        }
+    }
+
+
+class SensorPredictionResponse(BaseModel):
+    contamination_probability: float
+    accuracy: float
+    source_file: str
+    result_file: str
+    generated_at: str
+
+
+@router.post("/sensor", response_model=SensorPredictionResponse)
+async def predict_sensor(req: SensorPredictionRequest):
+    """
+    Run the aptamer/biosensor model on a saved weather JSON file.
+    Pass either `weather_file` (explicit filename) or `lat`+`lon` to auto-select
+    the most recent weather file for those coordinates.
+
+    Returns contamination_probability (%) and model accuracy (%), and writes a
+    prediction_result_*.json file to api/data/.
+    """
+    filename = req.weather_file
+
+    if filename is None:
+        if req.lat is None or req.lon is None:
+            raise HTTPException(
+                status_code=422,
+                detail="Provide either 'weather_file' or both 'lat' and 'lon'.",
+            )
+        filename = contamination.latest_weather_file(req.lat, req.lon)
+        if filename is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No weather file found for lat={req.lat}, lon={req.lon}. "
+                       "Call POST /api/v1/map/weather with confirm=true first.",
+            )
+
+    try:
+        result = contamination.run(filename)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    return SensorPredictionResponse(**result)
 
 
 @router.post("/batch", response_model=BatchPredictionResponse)

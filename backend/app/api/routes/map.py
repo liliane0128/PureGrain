@@ -13,6 +13,7 @@ from app.db.session import get_db
 from app.db.models.imported_record import ImportedRecord
 from app.db.models.prediction_result import Prediction
 from app.schemas.imported_record import MapDataItem
+from app.services import contamination
 
 
 router = APIRouter(prefix="/map", tags=["map"])
@@ -223,6 +224,13 @@ async def weather_preview_and_save(payload: dict):
             df.to_csv(filepath, index=False, encoding="utf-8")
             preview["saved"] = True
             preview["filename"] = str(filepath.name)
+
+            prediction = contamination.run(filepath.name)
+            preview["prediction"] = {
+                "contamination_probability": prediction["contamination_probability"],
+                "accuracy": prediction["accuracy"],
+                "result_file": prediction["result_file"],
+            }
 
         preview["sample"] = df.head(5).to_dict(orient="records")
 
