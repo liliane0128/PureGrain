@@ -47,14 +47,14 @@ export function SynBio() {
         <div className="synbio-visual">
           <div className="synbio-frame">
             <Image
-              src="/images/7v3t_assembly-1.jpeg"
-              alt="Structure 3D de l'aptamère lié à la zéaralénone, coloré en spectre du 5' au 3'"
-              width={500}
-              height={500}
-              className="synbio-image synbio-image-mol"
+              src="/images/leon-mcgregor-Zk3ZUpzSp8c-unsplash.jpg"
+              alt="Champ de céréales, support de collecte des échantillons agricoles"
+              width={1200}
+              height={768}
+              className="synbio-image"
               sizes="(max-width: 900px) 90vw, 45vw"
             />
-            <span className="synbio-visual-caption">Aptamère ZEN · structure 3D</span>
+            <span className="synbio-visual-caption">Terrain · collecte d'échantillons</span>
           </div>
           <div className="synbio-frame">
             <Image
