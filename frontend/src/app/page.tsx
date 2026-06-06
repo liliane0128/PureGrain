@@ -6,8 +6,6 @@ import { Partners } from '@/components/sections/Partners';
 import { Features } from '@/components/sections/Features';
 import { SynBio } from '@/components/sections/SynBio';
 import { PredictionMap } from '@/components/sections/PredictionMap';
-import { BioConversion } from '@/components/sections/BioConversion';
-import { Molecules } from '@/components/sections/Molecules';
 
 export default function Home() {
   return (
@@ -32,14 +30,8 @@ export default function Home() {
         {/* Section 4: Analyse terrain et métriques clés */}
         <Features />
 
-        {/* Section 5: Simulateur interactif de prédiction */}
+        {/* Section 5: Simulateur interactif de prédiction (carte + résultats) */}
         <PredictionMap />
-
-        {/* Section 6: Mécanisme de fluorescence BioConversion */}
-        <BioConversion />
-
-        {/* Section 7: Briques scientifiques Molecules */}
-        <Molecules />
       </main>
 
       {/* Section 6: Pied de page institutionnel minimalist */}

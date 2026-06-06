@@ -19,7 +19,6 @@ export function Partners() {
       <div className="partners-bg" aria-hidden="true" />
 
       <div className="container partners-content">
-        <span className="section-badge-glow">Le projet</span>
         <h2 className="partners-title">Un projet né de la biologie de synthèse</h2>
         <p className="partners-lead">
           Pure Graine est imaginé par une équipe d’étudiants, dans l’esprit de la compétition

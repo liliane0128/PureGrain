@@ -26,48 +26,6 @@ export type MapLocation = {
   lng: number;
 };
 
-export type DataPoint = {
-  id: number;
-  lat: number;
-  lng: number;
-  riskLevel: 'GREEN' | 'ORANGE' | 'RED' | null;
-  label?: string;
-};
-
-const RISK_COLORS: Record<string, string> = {
-  GREEN:  '#22c55e',
-  ORANGE: '#f97316',
-  RED:    '#ef4444',
-};
-
-const COUNTRY_CENTROIDS: Record<string, { lat: number; lng: number }> = {
-  'France':         { lat: 46.60, lng:  2.30 },
-  'Germany':        { lat: 51.20, lng: 10.50 },
-  'Spain':          { lat: 40.50, lng: -3.70 },
-  'Italy':          { lat: 42.80, lng: 12.80 },
-  'Poland':         { lat: 52.00, lng: 19.90 },
-  'Hungary':        { lat: 47.20, lng: 19.50 },
-  'Romania':        { lat: 45.90, lng: 24.90 },
-  'Czech Republic': { lat: 49.80, lng: 15.50 },
-  'Netherlands':    { lat: 52.30, lng:  5.30 },
-  'Belgium':        { lat: 50.80, lng:  4.30 },
-  'Austria':        { lat: 47.50, lng: 14.60 },
-  'Denmark':        { lat: 56.30, lng:  9.50 },
-  'Sweden':         { lat: 60.10, lng: 18.60 },
-  'Finland':        { lat: 64.00, lng: 26.00 },
-  'Portugal':       { lat: 39.70, lng: -8.10 },
-  'Greece':         { lat: 39.10, lng: 21.80 },
-  'Bulgaria':       { lat: 42.70, lng: 25.50 },
-  'Slovakia':       { lat: 48.70, lng: 19.70 },
-  'Lithuania':      { lat: 55.90, lng: 23.90 },
-  'Estonia':        { lat: 58.60, lng: 25.00 },
-};
-
-export function countryToLatLng(country: string | null | undefined): { lat: number; lng: number } | null {
-  if (!country) return null;
-  return COUNTRY_CENTROIDS[country] ?? null;
-}
-
 type DragState = {
   pointerId: number;
   startClientX: number;
@@ -80,7 +38,6 @@ type DragState = {
 type SatelliteMapProps = {
   selectedLocation?: MapLocation | null;
   onLocationSelect?: (location: MapLocation) => void;
-  dataPoints?: DataPoint[];
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -131,7 +88,7 @@ function labelUrl(zoom: number, x: number, y: number) {
   return `https://${sub}.basemaps.cartocdn.com/rastertiles/dark_only_labels/${zoom}/${x}/${y}.png`;
 }
 
-export function SatelliteMap({ selectedLocation = null, onLocationSelect, dataPoints = [] }: SatelliteMapProps) {
+export function SatelliteMap({ selectedLocation = null, onLocationSelect }: SatelliteMapProps) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<DragState | null>(null);
   const frameRef = useRef<number | null>(null);

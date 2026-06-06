@@ -45,19 +45,31 @@ export function SynBio() {
     >
       <div className="container synbio-layout">
         <div className="synbio-visual">
-          <Image
-            src="/images/toehold-switch.avif"
-            alt="Rendu 3D d'un toehold switch : brin d'ARN guidé vers le ribosome pour déclencher l'expression du reporter fluorescent"
-            width={1200}
-            height={720}
-            className="synbio-image"
-            sizes="(max-width: 900px) 90vw, 45vw"
-          />
-          <span className="synbio-visual-caption">Toehold switch · biologie de synthèse</span>
+          <div className="synbio-frame">
+            <Image
+              src="/images/7v3t_assembly-1.jpeg"
+              alt="Structure 3D de l'aptamère lié à la zéaralénone, coloré en spectre du 5' au 3'"
+              width={500}
+              height={500}
+              className="synbio-image synbio-image-mol"
+              sizes="(max-width: 900px) 90vw, 45vw"
+            />
+            <span className="synbio-visual-caption">Aptamère ZEN · structure 3D</span>
+          </div>
+          <div className="synbio-frame">
+            <Image
+              src="/images/toehold-switch.avif"
+              alt="Rendu 3D d'un toehold switch : brin d'ARN guidé vers le ribosome pour déclencher l'expression du reporter fluorescent"
+              width={1200}
+              height={720}
+              className="synbio-image"
+              sizes="(max-width: 900px) 90vw, 45vw"
+            />
+            <span className="synbio-visual-caption">Toehold switch · biologie de synthèse</span>
+          </div>
         </div>
 
         <div className="synbio-copy">
-          <span className="section-badge-glow">Biologie de synthèse</span>
           <h2>Un test de laboratoire, repensé pour le terrain</h2>
           <p className="synbio-lead">
             Plutôt que d’envoyer les échantillons vers un laboratoire, Pure Graine embarque la

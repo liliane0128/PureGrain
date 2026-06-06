@@ -21,7 +21,6 @@ export function Features() {
       <div className="features-container">
         {/* Accroche textuelle centrée en haut */}
         <div className="features-header-text">
-          <span className="section-badge-glow">Terrain augmenté</span>
           <h2 className="features-main-title">Analyser son champ en direct</h2>
           <p className="features-sub-title">
             Pure Graine rapproche l’analyse du terrain : un prélèvement rapide, une lecture simple et un résultat exploitable en 30 minutes pour repérer la zéaralénone.

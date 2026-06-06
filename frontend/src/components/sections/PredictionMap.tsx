@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { CloudRain, Droplets, Gauge, Sun, Thermometer, Wind } from 'lucide-react';
 import { SatelliteMap, type MapLocation } from './SatelliteMap';
-import { ImportCSV } from '@/components/ImportCSV';
 
 const fungalTargets = ['Fusarium graminearum', 'Fusarium culmorum', 'Fusarium verticillioides'];
 
@@ -20,12 +20,14 @@ type CurvePoint = {
   value: number;
 };
 
-// Variables météo choisies par l'utilisateur (entrées du modèle).
+// Relevé météo de la parcelle (aléatoire pour l'instant, en attendant le backend).
 type WeatherInputs = {
   temperature: number;
   humidity: number;
   rainfall: number;
   wind: number;
+  sunshine: number;
+  pressure: number;
 };
 
 const DEFAULT_WEATHER: WeatherInputs = {
@@ -33,7 +35,23 @@ const DEFAULT_WEATHER: WeatherInputs = {
   humidity: 78,
   rainfall: 9,
   wind: 14,
+  sunshine: 7,
+  pressure: 1014,
 };
+
+// Génère un relevé météo plausible (placeholder tant que le backend n'est pas branché).
+function randomWeather(): WeatherInputs {
+  const between = (min: number, max: number) => Math.round(min + Math.random() * (max - min));
+
+  return {
+    temperature: between(11, 33),
+    humidity: between(55, 97),
+    rainfall: between(0, 26),
+    wind: between(4, 42),
+    sunshine: between(2, 13),
+    pressure: between(995, 1030),
+  };
+}
 
 type RiskLevel = 'green' | 'orange' | 'red';
 
@@ -45,9 +63,9 @@ const RISK_META: Record<RiskLevel, { label: string; color: string }> = {
 };
 
 type ChartProps = {
-  areaClassName?: string;
   label: string;
-  lineClassName?: string;
+  pill: string;
+  legend: string;
   points: CurvePoint[];
   threshold?: number;
   unit: string;
@@ -74,6 +92,29 @@ function addDays(date: Date, days: number) {
   nextDate.setDate(nextDate.getDate() + days);
 
   return nextDate;
+}
+
+// Courbe lissée (Catmull-Rom → Bézier) pour un rendu doux façon graphique bio.
+function smoothPath(points: { x: number; y: number }[]) {
+  if (points.length < 2) {
+    return '';
+  }
+
+  let path = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const p0 = points[index - 1] ?? points[index];
+    const p1 = points[index];
+    const p2 = points[index + 1];
+    const p3 = points[index + 2] ?? p2;
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    path += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)} ${cp2x.toFixed(1)} ${cp2y.toFixed(1)} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+  }
+
+  return path;
 }
 
 function buildPrediction(
@@ -195,17 +236,12 @@ function buildPrediction(
   };
 }
 
-function PredictionChart({
-  areaClassName = '',
-  label,
-  lineClassName = '',
-  points,
-  threshold,
-  unit,
-}: ChartProps) {
-  const width = 680;
-  const height = 220;
-  const padding = 34;
+// Reproduit exactement l'UI du graphique « Réponse fluorescente » (BioConversion) :
+// même carte, en-tête + pastille, grille, axe, courbe à halo et légende.
+function PredictionChart({ label, pill, legend, points, threshold, unit }: ChartProps) {
+  const width = 760;
+  const height = 470;
+  const padding = 46;
   const values = points.map((point) => point.value);
   const maxValue = Math.max(...values, threshold ?? 0, 1);
   const plotWidth = width - padding * 2;
@@ -216,83 +252,79 @@ function PredictionChart({
 
     return { ...point, x, y };
   });
-  const linePath = coordinates
-    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
-    .join(' ');
-  const areaPath = `${linePath} L ${width - padding} ${height - padding} L ${padding} ${height - padding} Z`;
+  const linePath = smoothPath(coordinates);
+  const axisPath = `M ${padding} ${padding} V ${height - padding} H ${width - padding}`;
+  const gridLines = [0.25, 0.5, 0.75].map((fraction) => padding + fraction * plotHeight);
   const thresholdY =
     threshold === undefined ? null : height - padding - (threshold / maxValue) * plotHeight;
   const lastPoint = coordinates[coordinates.length - 1];
+  const lastDay = lastPoint?.day ?? 33;
 
   return (
-    <svg className="prediction-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={label}>
-      <line x1={padding} y1={padding} x2={padding} y2={height - padding} />
-      <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} />
-      {thresholdY !== null && (
-        <>
-          <line
-            className="prediction-chart-threshold"
-            x1={padding}
-            y1={thresholdY}
-            x2={width - padding}
-            y2={thresholdY}
-          />
-          <text x={padding + 8} y={Math.max(thresholdY - 8, 18)}>
-            seuil {threshold} {unit}
-          </text>
-        </>
-      )}
-      <path className={`prediction-chart-area ${areaClassName}`} d={areaPath} />
-      <path className={`prediction-chart-line ${lineClassName}`} d={linePath} />
-      {coordinates.map((point) => (
-        <circle key={point.day} cx={point.x} cy={point.y} r="4" />
-      ))}
-      {lastPoint && (
-        <text x={lastPoint.x - 110} y={Math.max(lastPoint.y - 14, 18)}>
-          {lastPoint.value} {unit} à J+{lastPoint.day}
-        </text>
-      )}
-      <text x={padding} y={height - 7}>
-        Aujourd’hui
-      </text>
-      <text x={width - padding - 56} y={height - 7}>
-        J+33
-      </text>
-    </svg>
-  );
-}
-
-type WeatherSliderProps = {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  unit: string;
-  onChange: (value: number) => void;
-};
-
-function WeatherSlider({ label, value, min, max, step, unit, onChange }: WeatherSliderProps) {
-  return (
-    <label className="sim-weather-slider">
-      <span className="sim-weather-slider-head">
+    <div className="bio-absorption-card">
+      <div className="bio-absorption-header">
         <span>{label}</span>
-        <strong>
-          {value}
-          {unit}
-        </strong>
-      </span>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-      />
-    </label>
+        <strong>{pill}</strong>
+      </div>
+
+      <div className="bio-absorption-chart">
+        <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={label}>
+          <g className="bio-chart-grid">
+            {gridLines.map((y) => (
+              <line key={y} x1={padding} y1={y} x2={width - padding} y2={y} />
+            ))}
+          </g>
+          <path className="bio-chart-axis" d={axisPath} />
+          {thresholdY !== null && (
+            <>
+              <line
+                className="prediction-chart-threshold"
+                x1={padding}
+                y1={thresholdY}
+                x2={width - padding}
+                y2={thresholdY}
+              />
+              <text className="bio-chart-label" x={padding + 8} y={Math.max(thresholdY - 10, 20)}>
+                seuil {threshold} {unit}
+              </text>
+            </>
+          )}
+          <path className="sim-chart-curve" d={linePath} />
+          {lastPoint && (
+            <text
+              className="bio-chart-value bio-chart-value-living"
+              x={Math.min(lastPoint.x, width - padding - 4)}
+              y={Math.max(lastPoint.y - 16, 22)}
+              textAnchor="end"
+            >
+              {lastPoint.value} {unit} à J+{lastDay}
+            </text>
+          )}
+          <text className="bio-chart-label" x={padding} y={height - 14}>
+            Aujourd’hui
+          </text>
+          <text className="bio-chart-label" x={width - padding} y={height - 14} textAnchor="end">
+            J+{lastDay}
+          </text>
+        </svg>
+      </div>
+
+      <div className="bio-absorption-legend">
+        <span>
+          <i className="bio-legend-living" />
+          {legend}
+        </span>
+        {threshold !== undefined && (
+          <span>
+            <i className="sim-legend-threshold" />
+            Seuil réglementaire
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
+
 
 export function PredictionMap() {
   const [selectedFungus, setSelectedFungus] = useState(fungalTargets[0]);
@@ -300,32 +332,7 @@ export function PredictionMap() {
   const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
   const [weather, setWeather] = useState<WeatherInputs>(DEFAULT_WEATHER);
   const [hasSubmitted, setHasSubmitted] = useState(false);
-  const [weatherPreview, setWeatherPreview] = useState<any | null>(null);
-  const [weatherLoading, setWeatherLoading] = useState(false);
-  const [weatherError, setWeatherError] = useState<string | null>(null);
   const currentDate = useMemo(() => new Date(), []);
-
-  useEffect(() => {
-    fetch(`${API_URL}/api/v1/map/data`)
-      .then((r) => r.json())
-      .then((items: { id: number; country_name: string | null; risk_level: string | null; toxin_name: string | null; crop_type: string | null }[]) => {
-        const pts: DataPoint[] = [];
-        items.forEach((item) => {
-          const coords = countryToLatLng(item.country_name);
-          if (!coords) return;
-          // small deterministic jitter so points from same country don't overlap
-          pts.push({
-            id: item.id,
-            lat: coords.lat + Math.sin(item.id * 7.3) * 0.6,
-            lng: coords.lng + Math.cos(item.id * 5.1) * 0.8,
-            riskLevel: (item.risk_level as DataPoint['riskLevel']) ?? null,
-            label: [item.toxin_name, item.crop_type, item.country_name].filter(Boolean).join(' · '),
-          });
-        });
-        setDataPoints(pts);
-      })
-      .catch(() => {});
-  }, []);
   const today = useMemo(() => formatDate(currentDate), [currentDate]);
 
   const selectedToxinConfig = useMemo(
@@ -343,66 +350,32 @@ export function PredictionMap() {
     setHasSubmitted(false);
   };
 
-  const weatherApiUrl = process.env.NEXT_PUBLIC_WEATHER_API_URL || "http://localhost:8000/api/v1/map/weather";
-
-  async function fetchWeather(confirm = false) {
-    setWeatherError(null);
-    setWeatherLoading(true);
-    setWeatherPreview(null);
-    try {
-      if (!selectedLocation) throw new Error("Aucune position sélectionnée");
-      const payload = {
-        latitude: selectedLocation.lat,
-        longitude: selectedLocation.lng,
-        days: 7,
-        confirm,
-      };
-
-      const res = await fetch(weatherApiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const text = await res.text();
-      let data: any = null;
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch (e) {
-        data = { raw: text };
-      }
-
-      if (!res.ok) {
-        const detail = data?.detail ?? data ?? text;
-        throw new Error(String(detail));
-      }
-
-      setWeatherPreview(data);
-    } catch (e: any) {
-      setWeatherError(e?.message ?? "Erreur réseau");
-    } finally {
-      setWeatherLoading(false);
-    }
-  }
   const launchSimulation = () => {
+    // Relevé météo simulé tiré au lancement (placeholder avant connexion backend).
+    setWeather(randomWeather());
     setHasSubmitted(true);
     requestAnimationFrame(() => {
       document.getElementById('simulation-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   };
 
-  const setWeatherField = (field: keyof WeatherInputs) => (value: number) =>
-    setWeather((current) => ({ ...current, [field]: value }));
-
   const risk = prediction?.risk;
   const riskMeta = risk ? RISK_META[risk.level] : null;
+
+  const weatherCards = [
+    { key: 'temp', Icon: Thermometer, value: weather.temperature, unit: ' °C', label: 'Température', color: '#f5b34d' },
+    { key: 'sun', Icon: Sun, value: weather.sunshine, unit: ' h', label: 'Ensoleillement', color: '#fbbf24' },
+    { key: 'rain', Icon: CloudRain, value: weather.rainfall, unit: ' mm', label: 'Pluviométrie', color: '#60a5fa' },
+    { key: 'humidity', Icon: Droplets, value: weather.humidity, unit: ' %', label: 'Humidité', color: '#34d399' },
+    { key: 'wind', Icon: Wind, value: weather.wind, unit: ' km/h', label: 'Vent', color: '#94a3b8' },
+    { key: 'pressure', Icon: Gauge, value: weather.pressure, unit: ' hPa', label: 'Pression', color: '#a78bfa' },
+  ];
 
   return (
     <>
       {/* Section carte : configuration de la parcelle + lancement */}
       <section id="prediction-map" className="prediction-dashboard-section">
         <div className="prediction-dashboard-header">
-          <span className="section-badge-glow">Console de prédiction</span>
           <h2>Simulateur agronomique prédictif</h2>
           <p>
             Définissez les paramètres cibles, localisez une parcelle sur la carte satellite, puis
@@ -477,100 +450,6 @@ export function PredictionMap() {
               >
                 Lancer la simulation
               </button>
-              {/* Import CSV component (re-added after pull overwrite) */}
-              <div style={{ marginTop: 12 }}>
-                <ImportCSV />
-              </div>
-
-              {/* Weather preview & save controls (moved inside left overlay so it's visible) */}
-              <div style={{ marginTop: 12 }}>
-                <h4 style={{ marginBottom: 8 }}>Météo & CSV</h4>
-                <div className="prediction-field-group">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => fetchWeather(false)}
-                    disabled={!selectedLocation || weatherLoading}
-                  >
-                    {weatherLoading ? "Chargement..." : "Prévisualiser la météo"}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={() => fetchWeather(true)}
-                    disabled={!selectedLocation || weatherLoading}
-                    style={{ marginLeft: 8 }}
-                  >
-                    {weatherLoading ? "En cours..." : "Confirmer et créer CSV"}
-                  </button>
-                </div>
-
-                {weatherError && <div className="text-red-600 mt-2">Erreur: {weatherError}</div>}
-
-                {weatherPreview && (
-                  <div className="mt-3 bg-white p-2 rounded shadow-sm">
-                    <div style={{ fontSize: 12, marginBottom: 6 }}>
-                      <strong>Aperçu météo</strong> — {weatherPreview.n_rows} jours
-                    </div>
-                    <div style={{ fontSize: 12 }}>
-                      <div>Temp moyenne (moy): {String(weatherPreview.aggregates.temperature_2m_mean)}</div>
-                      <div>Précipitations totales: {String(weatherPreview.aggregates.precipitation_sum)}</div>
-                      {weatherPreview.filename && (
-                        <div className="text-green-700">Fichier créé: {weatherPreview.filename}</div>
-                      )}
-                    </div>
-                    <details className="mt-2">
-                      <summary className="text-sm text-muted">Voir échantillon</summary>
-                      <pre className="text-xs mt-2 max-h-40 overflow-auto">{JSON.stringify(weatherPreview.sample, null, 2)}</pre>
-                    </details>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Weather preview & save controls */}
-            <div style={{ marginTop: 12 }}>
-              <h4 style={{ marginBottom: 8 }}>Météo & CSV</h4>
-              <div className="prediction-field-group">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => fetchWeather(false)}
-                  disabled={!selectedLocation || weatherLoading}
-                >
-                  {weatherLoading ? "Chargement..." : "Prévisualiser la météo"}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => fetchWeather(true)}
-                  disabled={!selectedLocation || weatherLoading}
-                  style={{ marginLeft: 8 }}
-                >
-                  {weatherLoading ? "En cours..." : "Confirmer et créer CSV"}
-                </button>
-              </div>
-
-              {weatherError && <div className="text-red-600 mt-2">Erreur: {weatherError}</div>}
-
-              {weatherPreview && (
-                <div className="mt-3 bg-white p-2 rounded shadow-sm">
-                  <div style={{ fontSize: 12, marginBottom: 6 }}>
-                    <strong>Aperçu météo</strong> — {weatherPreview.n_rows} jours
-                  </div>
-                  <div style={{ fontSize: 12 }}>
-                    <div>Temp moyenne (moy): {String(weatherPreview.aggregates.temperature_2m_mean)}</div>
-                    <div>Précipitations totales: {String(weatherPreview.aggregates.precipitation_sum)}</div>
-                    {weatherPreview.filename && (
-                      <div className="text-green-700">Fichier créé: {weatherPreview.filename}</div>
-                    )}
-                  </div>
-                  <details className="mt-2">
-                    <summary className="text-sm text-muted">Voir échantillon</summary>
-                    <pre className="text-xs mt-2 max-h-40 overflow-auto">{JSON.stringify(weatherPreview.sample, null, 2)}</pre>
-                  </details>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -580,7 +459,6 @@ export function PredictionMap() {
       <section id="simulation-results" className="simulation-results-section">
         <div className="container sim-results-inner">
           <header className="sim-results-header">
-            <span className="section-badge-glow">Résultats de simulation</span>
             <h2>Météo, risque et trajectoire de contamination</h2>
           </header>
 
@@ -588,45 +466,19 @@ export function PredictionMap() {
             <div className="sim-results-grid">
               <aside className="sim-weather-panel">
                 <h3 className="sim-panel-title">Conditions météo</h3>
-                <p className="sim-panel-hint">
-                  Ajustez les variables : le risque et les courbes se recalculent en direct.
-                </p>
-                <WeatherSlider
-                  label="Température"
-                  value={weather.temperature}
-                  min={5}
-                  max={38}
-                  step={1}
-                  unit=" °C"
-                  onChange={setWeatherField('temperature')}
-                />
-                <WeatherSlider
-                  label="Humidité"
-                  value={weather.humidity}
-                  min={30}
-                  max={100}
-                  step={1}
-                  unit=" %"
-                  onChange={setWeatherField('humidity')}
-                />
-                <WeatherSlider
-                  label="Pluviométrie"
-                  value={weather.rainfall}
-                  min={0}
-                  max={40}
-                  step={1}
-                  unit=" mm"
-                  onChange={setWeatherField('rainfall')}
-                />
-                <WeatherSlider
-                  label="Vent"
-                  value={weather.wind}
-                  min={0}
-                  max={60}
-                  step={1}
-                  unit=" km/h"
-                  onChange={setWeatherField('wind')}
-                />
+                <p className="sim-panel-hint">Relevé de la parcelle (données simulées).</p>
+                <div className="sim-weather-grid">
+                  {weatherCards.map(({ key, Icon, value, unit, label, color }) => (
+                    <div className="sim-weather-card" key={key}>
+                      <Icon className="sim-weather-icon" style={{ color }} aria-hidden="true" />
+                      <strong>
+                        {value}
+                        {unit}
+                      </strong>
+                      <span>{label}</span>
+                    </div>
+                  ))}
+                </div>
                 <p className="sim-weather-context">
                   Récolte estimée : <strong>{prediction.harvestDate}</strong>
                 </p>
@@ -682,25 +534,21 @@ export function PredictionMap() {
                 </div>
 
                 <div className="sim-charts">
-                  <div className="chart-item-box">
-                    <span>Contamination en {selectedToxin}</span>
-                    <PredictionChart
-                      label="Courbe de contamination de la toxine"
-                      points={prediction.toxinCurve}
-                      threshold={prediction.thresholdUgKg}
-                      unit="µg/kg"
-                    />
-                  </div>
-                  <div className="chart-item-box">
-                    <span>Contamination fongique ({selectedFungus})</span>
-                    <PredictionChart
-                      areaClassName="prediction-chart-area-blue"
-                      label="Courbe de contamination fongique"
-                      lineClassName="prediction-chart-line-blue"
-                      points={prediction.fungalCurve}
-                      unit="%"
-                    />
-                  </div>
+                  <PredictionChart
+                    label={`Contamination fongique (${selectedFungus})`}
+                    pill="%"
+                    legend="Charge fongique estimée"
+                    points={prediction.fungalCurve}
+                    unit="%"
+                  />
+                  <PredictionChart
+                    label={`Contamination en ${selectedToxin}`}
+                    pill="µg/kg"
+                    legend="Contamination prévue"
+                    points={prediction.toxinCurve}
+                    threshold={prediction.thresholdUgKg}
+                    unit="µg/kg"
+                  />
                 </div>
               </div>
             </div>

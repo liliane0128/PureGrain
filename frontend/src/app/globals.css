@@ -1036,51 +1036,70 @@ img {
 .prediction-chart {
   width: 100%;
   height: auto;
-  min-height: 230px;
   margin-top: var(--spacing-sm);
+  overflow: visible;
 }
 
 .prediction-chart line {
-  stroke: rgba(255, 255, 255, 0.18);
-  stroke-width: 1.4;
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 1;
 }
 
 .prediction-chart-area {
-  fill: rgba(245, 179, 77, 0.14);
+  fill: rgba(245, 179, 77, 0.08);
 }
 
 .prediction-chart-area-blue {
-  fill: rgba(96, 165, 250, 0.13);
+  fill: rgba(96, 165, 250, 0.08);
 }
 
 .prediction-chart-line {
   fill: none;
   stroke: var(--color-primary-light);
-  stroke-width: 4;
+  stroke-width: 5;
   stroke-linecap: round;
   stroke-linejoin: round;
+  filter: drop-shadow(0 0 9px rgba(245, 179, 77, 0.5));
 }
 
 .prediction-chart-line-blue {
   stroke: #93c5fd;
+  filter: drop-shadow(0 0 9px rgba(96, 165, 250, 0.5));
 }
 
 .prediction-chart-threshold {
-  stroke: rgba(255, 116, 116, 0.78);
-  stroke-dasharray: 8 8;
-  stroke-width: 2;
-}
-
-.prediction-chart circle {
-  fill: #08080a;
-  stroke: var(--color-primary-light);
-  stroke-width: 3;
+  stroke: rgba(248, 113, 113, 0.7);
+  stroke-dasharray: 7 7;
+  stroke-width: 1.5;
 }
 
 .prediction-chart text {
-  fill: var(--color-gray-600);
-  font-size: 14px;
-  font-weight: 800;
+  fill: var(--color-gray-500);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Courbe des résultats de prédiction, rendue exactement comme la courbe bio
+   (trait épais arrondi + halo vert). */
+.sim-chart-curve {
+  fill: none;
+  stroke: #34d399;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 10px rgba(52, 211, 153, 0.5));
+}
+
+/* Marqueur de légende pour la ligne de seuil (petit tiret rouge). */
+.sim-legend-threshold {
+  width: 16px;
+  height: 2px;
+  border-radius: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(248, 113, 113, 0.95) 0 5px,
+    transparent 5px 9px
+  );
 }
 
 .prediction-weather-panel {
@@ -3956,20 +3975,32 @@ img {
 }
 
 .synbio-visual {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.synbio-frame {
   position: relative;
   border-radius: var(--border-radius-xl);
   overflow: hidden;
   border: var(--edge-hairline);
   background: linear-gradient(135deg, #f4f6f8, #dde4ea);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
 }
 
 .synbio-image {
   display: block;
   width: 100%;
   height: auto;
-  max-height: 68vh;
+  max-height: 30vh;
   object-fit: cover;
+}
+
+/* Le rendu 3D de l'aptamère est carré sur fond clair : on le garde entier. */
+.synbio-image-mol {
+  object-fit: contain;
+  max-height: 32vh;
 }
 
 .synbio-visual-caption {
@@ -4246,10 +4277,9 @@ img {
 }
 
 .sim-results-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
-  gap: var(--spacing-xl);
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
 }
 
 /* Panneau météo (entrées utilisateur) */
@@ -4278,53 +4308,52 @@ img {
   line-height: 1.5;
 }
 
-.sim-weather-slider {
+/* Relevé météo : 6 indicateurs sur une seule ligne horizontale. */
+.sim-weather-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+.sim-weather-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--border-radius-md);
+  text-align: center;
+  transition:
+    transform 0.25s ease,
+    border-color 0.25s ease,
+    background 0.25s ease;
 }
 
-.sim-weather-slider-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  font-size: var(--font-size-sm);
-  color: var(--color-gray-500);
+.sim-weather-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.sim-weather-slider-head strong {
+.sim-weather-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.sim-weather-card strong {
   color: var(--color-white);
+  font-size: var(--font-size-base);
   font-variant-numeric: tabular-nums;
+  line-height: 1.1;
 }
 
-.sim-weather-slider input[type='range'] {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 4px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  outline: none;
-  cursor: pointer;
-}
-
-.sim-weather-slider input[type='range']::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--color-accent);
-  border: 2px solid #0a0a0c;
-  box-shadow: 0 0 0 3px var(--color-accent-soft);
-}
-
-.sim-weather-slider input[type='range']::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border: 2px solid #0a0a0c;
-  border-radius: 50%;
-  background: var(--color-accent);
+.sim-weather-card span {
+  font-size: 11px;
+  color: var(--color-gray-500);
+  line-height: 1.1;
 }
 
 .sim-weather-context {
@@ -4478,10 +4507,19 @@ img {
 }
 
 @media (max-width: 900px) {
-  .sim-results-grid,
   .sim-numbers-row,
   .sim-charts {
     grid-template-columns: 1fr;
+  }
+
+  .sim-weather-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .sim-weather-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
