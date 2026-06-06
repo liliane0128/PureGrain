@@ -52,12 +52,6 @@ async def get_map_data(db: AsyncSession = Depends(get_db)):
                 country_name=imported_record.location_country,
                 crop_type=imported_record.crop_type,
                 toxin_name=imported_record.toxin_name,
-                toxin_value_standardized_ug_kg=imported_record.toxin_value_standardized_ug_kg,
-                toxin_detected=imported_record.toxin_detected,
-                fungal_species=imported_record.fungal_species,
-                association_type=imported_record.association_type,
-                sample_year=imported_record.sample_year,
-                timestamp=imported_record.timestamp,
                 risk_score=risk_score,
                 risk_level=risk_level,
             )

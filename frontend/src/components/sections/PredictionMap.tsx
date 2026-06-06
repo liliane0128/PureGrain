@@ -304,6 +304,28 @@ export function PredictionMap() {
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [weatherError, setWeatherError] = useState<string | null>(null);
   const currentDate = useMemo(() => new Date(), []);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/v1/map/data`)
+      .then((r) => r.json())
+      .then((items: { id: number; country_name: string | null; risk_level: string | null; toxin_name: string | null; crop_type: string | null }[]) => {
+        const pts: DataPoint[] = [];
+        items.forEach((item) => {
+          const coords = countryToLatLng(item.country_name);
+          if (!coords) return;
+          // small deterministic jitter so points from same country don't overlap
+          pts.push({
+            id: item.id,
+            lat: coords.lat + Math.sin(item.id * 7.3) * 0.6,
+            lng: coords.lng + Math.cos(item.id * 5.1) * 0.8,
+            riskLevel: (item.risk_level as DataPoint['riskLevel']) ?? null,
+            label: [item.toxin_name, item.crop_type, item.country_name].filter(Boolean).join(' · '),
+          });
+        });
+        setDataPoints(pts);
+      })
+      .catch(() => {});
+  }, []);
   const today = useMemo(() => formatDate(currentDate), [currentDate]);
 
   const selectedToxinConfig = useMemo(

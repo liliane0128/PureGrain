@@ -8,9 +8,9 @@ export function ImportCSV() {
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1/imports/csv";
+  const apiUrl = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/imports/csv`;
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setResult(null);

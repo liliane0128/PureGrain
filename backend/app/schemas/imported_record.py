@@ -35,15 +35,10 @@ class ImportedRecordRead(ImportedRecordBase):
 class MapDataItem(BaseModel):
     id: int
     country_name: str | None = None
-    crop_type: str | None = None
-    toxin_name: str | None = None
-    toxin_value_standardized_ug_kg: float | None = None
-    toxin_detected: bool | None = None
-    fungal_species: str | None = None
-    association_type: str | None = None
-    sample_year: int | None = None
-    timestamp: datetime | None = None
-    risk_score: float | None = None
-    risk_level: str | None = None
+    crop_type: str | None = None 
+    toxin_name: str | None = None              
+    risk_level: str | None = None       
+    risk_score: float | None = None 
+
 
     model_config = ConfigDict(from_attributes=True)
