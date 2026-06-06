@@ -4003,7 +4003,8 @@ img {
   margin-bottom: var(--spacing-xl);
 }
 
-.synbio-lead strong {
+.synbio-lead strong,
+.synbio-detail strong {
   color: var(--color-white);
   font-weight: 600;
 }

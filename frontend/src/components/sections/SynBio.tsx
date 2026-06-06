@@ -41,12 +41,12 @@ export function SynBio() {
         </div>
 
         <div className="synbio-copy">
-          <h2>Un test de biologie synthétique pour collecter des données fiables</h2>
+          <h2>La biologie synthétique au service de l’innovation</h2>
           <p className="synbio-lead">
             Pure Grain a créé un test de terrain fondé sur la biologie synthétique pour mesurer la
             contamination directement au plus près des parcelles. L’objectif n’est pas seulement
-            d’obtenir un résultat rapide : chaque analyse produit une donnée exploitable, précise et
-            contextualisée.
+            d’obtenir un résultat rapide : chaque analyse produit une donnée{' '}
+            <strong>exploitable, précise et contextualisée</strong>.
           </p>
           <p className="synbio-detail">
             En multipliant ces mesures sur différents lots, cultures et conditions météo, le projet
@@ -56,8 +56,8 @@ export function SynBio() {
           </p>
           <p className="synbio-detail">
             Cette approche relie détection biologique et prédiction agronomique : aider les
-            agriculteurs à réduire les pertes, mieux décider quand agir, et limiter l’exposition des
-            consommateurs aux mycotoxines.
+            agriculteurs à <strong>réduire les pertes</strong>, mieux décider quand agir, et{' '}
+            <strong>limiter l’exposition des consommateurs</strong> aux mycotoxines.
           </p>
         </div>
       </div>
