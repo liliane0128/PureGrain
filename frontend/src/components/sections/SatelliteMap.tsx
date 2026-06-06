@@ -3,14 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const TILE_SIZE = 256;
-// Tuiles récupérées 2 niveaux de zoom plus haut puis affichées réduites → rendu HD net.
-const HD_TILE_ZOOM_OFFSET = 2;
+// Tuiles récupérées 1 niveau de zoom plus haut puis affichées réduites : bonne
+// netteté sans multiplier le nombre de tuiles (chargement rapide et propre, y
+// compris au premier clic de zoom).
+const HD_TILE_ZOOM_OFFSET = 1;
 // Niveau de tuiles max réellement fourni par la couche s2cloudless (au-delà → 404).
 const MAX_TILE_ZOOM = 9;
 const MIN_ZOOM = 5;
-// Au-delà de 7, on ne ferait qu'agrandir les tuiles du niveau source maximum (9) :
-// le rendu se dégraderait sans gagner de détail. On s'arrête donc au plus net.
-const MAX_ZOOM = 7;
+const MAX_ZOOM = 8;
 const ZOOM_ANIMATION_MS = 420;
 const INITIAL_VIEW = {
   lat: 46.45,
