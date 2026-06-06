@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from sqlalchemy import ForeignKey, Float, String, JSON, DateTime
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 
@@ -28,3 +28,6 @@ class Prediction(Base):
     predicted_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True
     )
+
+    # Relationship back to imported record
+    imported_record = relationship("ImportedRecord", back_populates="predictions")

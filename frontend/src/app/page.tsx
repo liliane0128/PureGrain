@@ -13,7 +13,6 @@ export default function Home() {
     <>
       {/* Navigation en haut de page */}
       <Header />
-      
       {/* Révélation progressive des éléments au scroll */}
       <ScrollReveal />
 

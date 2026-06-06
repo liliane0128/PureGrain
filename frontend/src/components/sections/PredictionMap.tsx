@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { SatelliteMap, type MapLocation } from './SatelliteMap';
+import { ImportCSV } from '@/components/ImportCSV';
 
 const fungalTargets = ['Fusarium graminearum', 'Fusarium culmorum', 'Fusarium verticillioides'];
 
@@ -328,6 +329,11 @@ export function PredictionMap() {
             >
               Lancer la simulation
             </button>
+
+            {/* Upload CSV intégré dans le panneau de configuration pour rester visible */}
+            <div style={{ marginTop: 12 }}>
+              <ImportCSV />
+            </div>
           </div>
 
           {/* Overlay droit: Résultats & Graphes */}

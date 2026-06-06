@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
@@ -10,6 +10,7 @@ class ImportedRecord(Base):
     """Ligne importée depuis le CSV source."""
 
     __tablename__ = "imported_records"
+    __table_args__ = (UniqueConstraint("sample_id", "source_dataset", name="uq_sample_source"),)
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
@@ -39,3 +40,6 @@ class ImportedRecord(Base):
         default=lambda: datetime.now(timezone.utc),
         index=True,
     )
+
+    # Relationship to predictions
+    predictions = relationship("Prediction", back_populates="imported_record", cascade="all, delete-orphan")

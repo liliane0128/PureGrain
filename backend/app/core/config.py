@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     model_path: str = "app/data/model.joblib"
 
     # Database
-    database_url: str = "postgresql+asyncpg://puregrain:puregrain@localhost:5432/puregrain"
+    database_url: str = "postgresql+asyncpg://ryane:Sryane030SQL2025@localhost:5432/pure"
 
     class Config:
         env_file = ".env"

@@ -252,29 +252,42 @@ async def import_csv(file: UploadFile, db: AsyncSession, batch_size: int = 1000)
     errors: list[str] = []
     records_to_add: list[ImportedRecord] = []
 
-    for i, row in enumerate(df.to_dict(orient="records"), start=1):
+    try:
+        # Use a transaction to avoid partial state on failure
+        async with db.begin():
+            for i, row in enumerate(df.to_dict(orient="records"), start=1):
+                try:
+                    records_to_add.append(_row_to_imported_record(row))
+                except Exception as e:
+                    rows_skipped += 1
+                    errors.append(f"Ligne {i}: {e}")
+
+                if len(records_to_add) >= batch_size:
+                    db.add_all(records_to_add)
+                    await db.flush()  # records now have IDs
+                    preds = [_score_record(r) for r in records_to_add]
+                    db.add_all(preds)
+                    await db.flush()
+                    rows_inserted += len(records_to_add)
+                    records_to_add.clear()
+
+            if records_to_add:
+                db.add_all(records_to_add)
+                await db.flush()
+                preds = [_score_record(r) for r in records_to_add]
+                db.add_all(preds)
+                await db.flush()
+                rows_inserted += len(records_to_add)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        # In case of unexpected DB error, ensure rollback and return a 500
         try:
-            records_to_add.append(_row_to_imported_record(row))
-        except Exception as e:
-            rows_skipped += 1
-            errors.append(f"Ligne {i}: {e}")
-
-        if len(records_to_add) >= batch_size:
-            db.add_all(records_to_add)
-            await db.flush()  # records now have IDs
-            db.add_all(_score_record(r) for r in records_to_add)
-            await db.flush()
-            rows_inserted += len(records_to_add)
-            records_to_add.clear()
-
-    if records_to_add:
-        db.add_all(records_to_add)
-        await db.flush()
-        db.add_all(_score_record(r) for r in records_to_add)
-        await db.flush()
-        rows_inserted += len(records_to_add)
-
-    await db.commit()
+            await db.rollback()
+        except Exception:
+            pass
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'import CSV (transaction): {e}")
 
     return ImportSummary(
         filename=file.filename,
