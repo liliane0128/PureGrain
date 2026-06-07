@@ -3,16 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const TILE_SIZE = 256;
-// Tuiles récupérées 1 niveau de zoom plus haut puis affichées réduites : bonne
-// netteté sans multiplier le nombre de tuiles (chargement rapide et propre, y
-// compris au premier clic de zoom).
 const HD_TILE_ZOOM_OFFSET = 1;
-// Esri World Imagery fournit des tuiles jusqu'au niveau ~19 → on peut descendre
-// jusqu'à la parcelle.
 const MAX_TILE_ZOOM = 19;
-const MIN_ZOOM = 5;
+const MIN_ZOOM = 3;
 const MAX_ZOOM = 17;
 const ZOOM_ANIMATION_MS = 420;
+const FLY_ANIMATION_MS = 900;
 const INITIAL_VIEW = {
   lat: 46.45,
   lng: 2.25,
@@ -38,6 +34,7 @@ type DragState = {
 type SatelliteMapProps = {
   selectedLocation?: MapLocation | null;
   onLocationSelect?: (location: MapLocation) => void;
+  centerOn?: MapLocation | null;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -81,14 +78,12 @@ function tileUrl(zoom: number, x: number, y: number) {
   return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${y}/${x}`;
 }
 
-// Tuiles transparentes "labels only" (noms de villes, frontières) superposées
-// au satellite. CARTO sert ces overlays en PNG via les sous-domaines a-d.
 function labelUrl(zoom: number, x: number, y: number) {
   const sub = 'abcd'[(x + y) % 4];
   return `https://${sub}.basemaps.cartocdn.com/rastertiles/dark_only_labels/${zoom}/${x}/${y}.png`;
 }
 
-export function SatelliteMap({ selectedLocation = null, onLocationSelect }: SatelliteMapProps) {
+export function SatelliteMap({ selectedLocation = null, onLocationSelect, centerOn }: SatelliteMapProps) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<DragState | null>(null);
   const frameRef = useRef<number | null>(null);
@@ -110,61 +105,67 @@ export function SatelliteMap({ selectedLocation = null, onLocationSelect }: Sate
 
   useEffect(() => {
     const node = mapRef.current;
-
-    if (!node) {
-      return;
-    }
-
+    if (!node) return;
     const observer = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
       setSize({ width, height });
     });
-
     observer.observe(node);
-
     return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
     return () => {
-      if (frameRef.current !== null) {
-        window.cancelAnimationFrame(frameRef.current);
-      }
-
-      if (zoomFrameRef.current !== null) {
-        window.cancelAnimationFrame(zoomFrameRef.current);
-      }
+      if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
+      if (zoomFrameRef.current !== null) window.cancelAnimationFrame(zoomFrameRef.current);
     };
   }, []);
 
-  const scheduleView = useCallback((nextView: View) => {
-    pendingViewRef.current = nextView;
+  // Fly-to animation when centerOn changes
+  useEffect(() => {
+    if (!centerOn) return;
+    const start = { ...viewRef.current };
+    const targetZoom = Math.max(start.zoom, 7);
+    const startTime = performance.now();
 
-    if (frameRef.current !== null) {
-      return;
+    if (zoomFrameRef.current !== null) {
+      window.cancelAnimationFrame(zoomFrameRef.current);
     }
 
+    const step = (now: number) => {
+      const progress = Math.min((now - startTime) / FLY_ANIMATION_MS, 1);
+      const t = easeOutCubic(progress);
+      setView({
+        lat: start.lat + (centerOn.lat - start.lat) * t,
+        lng: start.lng + (centerOn.lng - start.lng) * t,
+        zoom: start.zoom + (targetZoom - start.zoom) * t,
+      });
+      if (progress < 1) {
+        zoomFrameRef.current = window.requestAnimationFrame(step);
+      } else {
+        zoomFrameRef.current = null;
+      }
+    };
+
+    zoomFrameRef.current = window.requestAnimationFrame(step);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [centerOn]);
+
+  const scheduleView = useCallback((nextView: View) => {
+    pendingViewRef.current = nextView;
+    if (frameRef.current !== null) return;
     frameRef.current = window.requestAnimationFrame(() => {
       frameRef.current = null;
-
-      if (pendingViewRef.current) {
-        setView(pendingViewRef.current);
-      }
+      if (pendingViewRef.current) setView(pendingViewRef.current);
     });
   }, []);
 
-  // Zoom à la molette, centré sur le curseur (le point sous la souris reste fixe).
-  // Listener non passif pour pouvoir bloquer le scroll de page pendant le zoom carte.
   useEffect(() => {
     const node = mapRef.current;
-
-    if (!node) {
-      return;
-    }
+    if (!node) return;
 
     const onWheel = (event: WheelEvent) => {
       event.preventDefault();
-
       const rect = node.getBoundingClientRect();
       const cursorX = event.clientX - rect.left;
       const cursorY = event.clientY - rect.top;
@@ -172,11 +173,7 @@ export function SatelliteMap({ selectedLocation = null, onLocationSelect }: Sate
       const width = Math.max(sizeRef.current.width, 1);
       const height = Math.max(sizeRef.current.height, 1);
       const nextZoom = clamp(current.zoom - event.deltaY * 0.0045, MIN_ZOOM, MAX_ZOOM);
-
-      if (nextZoom === current.zoom) {
-        return;
-      }
-
+      if (nextZoom === current.zoom) return;
       const center = project(current.lat, current.lng, current.zoom);
       const topLeft = { x: center.x - width / 2, y: center.y - height / 2 };
       const geo = unproject(topLeft.x + cursorX, topLeft.y + cursorY, current.zoom);
@@ -186,12 +183,10 @@ export function SatelliteMap({ selectedLocation = null, onLocationSelect }: Sate
         projected.y - (cursorY - height / 2),
         nextZoom
       );
-
       scheduleView({ lat: nextCenter.lat, lng: nextCenter.lng, zoom: nextZoom });
     };
 
     node.addEventListener('wheel', onWheel, { passive: false });
-
     return () => node.removeEventListener('wheel', onWheel);
   }, [scheduleView]);
 
@@ -204,18 +199,12 @@ export function SatelliteMap({ selectedLocation = null, onLocationSelect }: Sate
       y: center.y - height / 2,
     };
 
-    // Construit l'ensemble des tuiles couvrant le viewport pour un offset de niveau
-    // donné. Le serveur n'expose que des zooms entiers : on prend le plus proche du
-    // zoom courant + l'offset, puis on met à l'échelle (fractionnaire → zoom fluide).
     const buildTiles = (offset: number, urlFn: (z: number, x: number, y: number) => string) => {
       const tileZoom = clamp(Math.round(view.zoom) + offset, 0, MAX_TILE_ZOOM);
       const tileToView = 2 ** (view.zoom - tileZoom);
       const viewToTile = 1 / tileToView;
       const renderedTileSize = TILE_SIZE * tileToView;
-      const sourceTopLeft = {
-        x: topLeft.x * viewToTile,
-        y: topLeft.y * viewToTile,
-      };
+      const sourceTopLeft = { x: topLeft.x * viewToTile, y: topLeft.y * viewToTile };
       const minTileX = Math.floor(sourceTopLeft.x / TILE_SIZE) - 1;
       const maxTileX = Math.floor((sourceTopLeft.x + width * viewToTile) / TILE_SIZE) + 1;
       const minTileY = Math.max(0, Math.floor(sourceTopLeft.y / TILE_SIZE) - 1);
@@ -224,13 +213,9 @@ export function SatelliteMap({ selectedLocation = null, onLocationSelect }: Sate
         Math.floor((sourceTopLeft.y + height * viewToTile) / TILE_SIZE) + 1
       );
       const tiles = [];
-
       for (let y = minTileY; y <= maxTileY; y += 1) {
         for (let x = minTileX; x <= maxTileX; x += 1) {
           const tileX = wrapTileX(x, tileZoom);
-
-          // Positions arrondies au pixel entier + recouvrement de 2 px pour masquer
-          // les franges d'anti-aliasing et éliminer les coutures entre tuiles.
           tiles.push({
             key: `${tileZoom}-${x}-${y}`,
             src: urlFn(tileZoom, tileX, y),
@@ -240,15 +225,11 @@ export function SatelliteMap({ selectedLocation = null, onLocationSelect }: Sate
           });
         }
       }
-
       return tiles;
     };
 
-    // Couche de base basse résolution (peu de tuiles, chargement quasi instantané)
-    // qui comble le fond pendant que la couche HD se charge → aucun trou au zoom.
     const baseTiles = buildTiles(0, tileUrl);
     const tiles = buildTiles(HD_TILE_ZOOM_OFFSET, tileUrl);
-    // Couche de labels (noms de villes) au zoom d'affichage, alignée sur la base.
     const labelTiles = buildTiles(0, labelUrl);
 
     const selectedMarker = selectedLocation
@@ -256,11 +237,7 @@ export function SatelliteMap({ selectedLocation = null, onLocationSelect }: Sate
           ...selectedLocation,
           ...(() => {
             const point = project(selectedLocation.lat, selectedLocation.lng, view.zoom);
-
-            return {
-              left: point.x - topLeft.x,
-              top: point.y - topLeft.y,
-            };
+            return { left: point.x - topLeft.x, top: point.y - topLeft.y };
           })(),
         }
       : null;
@@ -268,38 +245,34 @@ export function SatelliteMap({ selectedLocation = null, onLocationSelect }: Sate
     return { baseTiles, tiles, labelTiles, selectedMarker };
   }, [selectedLocation, size.height, size.width, view.lat, view.lng, view.zoom]);
 
+  // Use viewRef so pointer handlers never capture stale state
   const handlePointerDown = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
-      const center = project(view.lat, view.lng, view.zoom);
+      const current = viewRef.current;
+      const center = project(current.lat, current.lng, current.zoom);
       dragRef.current = {
         pointerId: event.pointerId,
         startClientX: event.clientX,
         startClientY: event.clientY,
         startWorldX: center.x,
         startWorldY: center.y,
-        zoom: view.zoom,
+        zoom: current.zoom,
       };
-
       event.currentTarget.setPointerCapture(event.pointerId);
       setIsDragging(true);
     },
-    [view.lat, view.lng, view.zoom]
+    []
   );
 
   const handlePointerMove = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
       const drag = dragRef.current;
-
-      if (!drag) {
-        return;
-      }
-
+      if (!drag) return;
       const next = unproject(
         drag.startWorldX - (event.clientX - drag.startClientX),
         drag.startWorldY - (event.clientY - drag.startClientY),
         drag.zoom
       );
-
       scheduleView({ ...next, zoom: drag.zoom });
     },
     [scheduleView]
@@ -308,68 +281,55 @@ export function SatelliteMap({ selectedLocation = null, onLocationSelect }: Sate
   const stopDragging = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
       const drag = dragRef.current;
-
       if (drag?.pointerId === event.pointerId) {
         const movedDistance = Math.hypot(
           event.clientX - drag.startClientX,
           event.clientY - drag.startClientY
         );
-
         if (event.type === 'pointerup' && movedDistance < 6 && onLocationSelect && mapRef.current) {
+          const current = viewRef.current;
           const rect = mapRef.current.getBoundingClientRect();
-          const center = project(view.lat, view.lng, view.zoom);
+          const center = project(current.lat, current.lng, current.zoom);
           const topLeft = {
-            x: center.x - Math.max(size.width, 1) / 2,
-            y: center.y - Math.max(size.height, 1) / 2,
+            x: center.x - Math.max(sizeRef.current.width, 1) / 2,
+            y: center.y - Math.max(sizeRef.current.height, 1) / 2,
           };
           const location = unproject(
             topLeft.x + event.clientX - rect.left,
             topLeft.y + event.clientY - rect.top,
-            view.zoom
+            current.zoom
           );
-
           onLocationSelect({
             lat: Number(location.lat.toFixed(5)),
             lng: Number(location.lng.toFixed(5)),
           });
         }
-
         dragRef.current = null;
         setIsDragging(false);
       }
     },
-    [onLocationSelect, size.height, size.width, view.lat, view.lng, view.zoom]
+    [onLocationSelect]
   );
 
-  // Anime le zoom de façon continue (easing) au lieu de sauter d'un niveau entier.
   const animateZoomBy = useCallback((delta: number) => {
     const startZoom = viewRef.current.zoom;
     const targetZoom = clamp(startZoom + delta, MIN_ZOOM, MAX_ZOOM);
-
     if (zoomFrameRef.current !== null) {
       window.cancelAnimationFrame(zoomFrameRef.current);
       zoomFrameRef.current = null;
     }
-
-    if (targetZoom === startZoom) {
-      return;
-    }
-
+    if (targetZoom === startZoom) return;
     const startTime = performance.now();
-
     const step = (now: number) => {
       const progress = Math.min((now - startTime) / ZOOM_ANIMATION_MS, 1);
       const nextZoom = startZoom + (targetZoom - startZoom) * easeOutCubic(progress);
-
       setView((current) => ({ ...current, zoom: nextZoom }));
-
       if (progress < 1) {
         zoomFrameRef.current = window.requestAnimationFrame(step);
       } else {
         zoomFrameRef.current = null;
       }
     };
-
     zoomFrameRef.current = window.requestAnimationFrame(step);
   }, []);
 

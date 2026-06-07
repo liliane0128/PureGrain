@@ -72,9 +72,33 @@ export function PredictionMap() {
   const [toxinResults, setToxinResults] = useState<{ ZEN: number; DON: number; AFLA: number } | null>(null);
   const [locationName, setLocationName] = useState<{ country: string; region: string } | null>(null);
   const [cropGroup, setCropGroup] = useState<'wheat' | 'maize' | 'barley'>('wheat');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [mapCenter, setMapCenter] = useState<MapLocation | null>(null);
 
   const currentDate = useMemo(() => new Date(), []);
   const today = useMemo(() => formatDate(currentDate), [currentDate]);
+
+  const searchLocation = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`,
+        { headers: { 'Accept-Language': 'fr' } }
+      );
+      const data = await res.json();
+      if (data.length > 0) {
+        const loc: MapLocation = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+        setMapCenter(loc);
+        handleLocationSelect(loc);
+      }
+    } catch {
+      // geocoding best-effort
+    }
+    setIsSearching(false);
+  };
 
   const handleLocationSelect = async (location: MapLocation) => {
     setSelectedLocation(location);
@@ -169,9 +193,26 @@ export function PredictionMap() {
 
         <div className="prediction-dashboard-layout">
           <div className="prediction-map-canvas">
-            <SatelliteMap selectedLocation={selectedLocation} onLocationSelect={handleLocationSelect} />
+            <SatelliteMap
+              selectedLocation={selectedLocation}
+              onLocationSelect={handleLocationSelect}
+              centerOn={mapCenter}
+            />
 
             <div className="prediction-overlay-panel prediction-overlay-left">
+              <form className="location-search-form" onSubmit={searchLocation}>
+                <input
+                  type="text"
+                  className="location-search-input"
+                  placeholder="Rechercher un pays, une région…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <button type="submit" className="location-search-btn" disabled={isSearching}>
+                  {isSearching ? '…' : '→'}
+                </button>
+              </form>
+
               <div className="prediction-location-info">
                 <span>Coordonnées de la parcelle</span>
                 {selectedLocation ? (

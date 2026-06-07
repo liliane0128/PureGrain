@@ -1,0 +1,22 @@
+{
+  "contamination_probability": 0.5,
+  "toxins": {
+    "ZEN": 1.0,
+    "DON": 0.4,
+    "AFLA": 0.0
+  },
+  "accuracy": 0.0,
+  "risk_level": "GREEN",
+  "weather": {
+    "temperature_2m_mean": 15.17,
+    "temperature_2m_max": 19.6,
+    "temperature_2m_min": 12.0,
+    "relative_humidity_2m_mean": 68.08,
+    "precipitation_sum": 0.2,
+    "cloud_cover_mean": 50.0
+  },
+  "model_roc_auc": 0.0,
+  "source_file": "weather_48.20431_-0.80523_20260607T092637Z.csv",
+  "result_file": "prediction_result_48.20431_-0.80523_20260607T092637Z.json",
+  "generated_at": "20260607T092637Z"
+}
