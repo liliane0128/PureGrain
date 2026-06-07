@@ -1,7 +1,7 @@
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Any
 from app.schemas.batch import BatchPredictionResponse
 from sqlalchemy import select, func, case, or_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,6 +11,8 @@ from app.db.models.imported_record import ImportedRecord
 from app.db.models.prediction_result import Prediction
 from app.services import weather_model
 from app.services import contamination
+from app.services.prediction_service import predict_risks_from_csv
+from app.services.prediction_service import predict_risks_from_features
 
 router = APIRouter(prefix="/predict", tags=["prediction"])
 
@@ -37,7 +39,7 @@ class HistoricalSummary(BaseModel):
 class GeoPredictionResponse(BaseModel):
     zen_probability: float
     risk_level: str
-    weather: dict[str, float]
+    weather: dict[str, Any]
     model_roc_auc: float
     historical: HistoricalSummary
 
@@ -93,6 +95,7 @@ class GeoPredictionRequest(BaseModel):
     lon: float = Field(..., ge=-180, le=180)
     crop_group: str = Field("maize", description="maize | wheat | generic_cereal")
     sampling_point: str = Field("Primary production")
+    date: str | None = Field(None, description="ISO date string (YYYY-MM-DD) to use as sample_date")
 
     model_config = {
         "json_schema_extra": {
@@ -110,27 +113,29 @@ async def predict_geo(
     GPS coordinates → Open-Meteo weather → ML prediction (ROC-AUC 0.90)
     + historical toxin records for the same country from the imported dataset.
     """
+    # No external API calls: build features from date/lat/lon and run per-strain models
+    features = {"date": req.date, "lat": req.lat, "lon": req.lon}
     try:
-        ml_result = await weather_model.predict_geo(
-            lat=req.lat, lon=req.lon,
-            crop_group=req.crop_group,
-            sampling_point=req.sampling_point,
-        )
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=503, detail=str(e))
-    except httpx.HTTPError as e:
-        raise HTTPException(status_code=502, detail=f"Open-Meteo request failed: {e}")
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        per_strain = await predict_risks_from_features(features)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    # Aggregate a single ZEN-like probability and ROC-AUC for backward compatibility
+    probs = [v["incertitude"] / 100.0 for v in per_strain.values() if v.get("incertitude") is not None]
+    accs = [v["accuracy"] for v in per_strain.values() if v.get("accuracy") is not None]
+    zen_prob = float(sum(probs) / len(probs)) if probs else 0.0
+    roc_auc = float(sum(accs) / len(accs) / 100.0) if accs else 0.0
 
     country_fr = weather_model._lat_lon_to_country(req.lat, req.lon)
     historical = await _historical_summary(db, country_fr)
 
+    weather_minimal = {"date": req.date, "latitude": req.lat, "longitude": req.lon}
+
     return GeoPredictionResponse(
-        zen_probability=ml_result["zen_probability"],
-        risk_level=ml_result["risk_level"],
-        weather=ml_result["weather"],
-        model_roc_auc=ml_result["model_roc_auc"],
+        zen_probability=zen_prob,
+        risk_level=("GREEN" if zen_prob < 0.33 else ("ORANGE" if zen_prob < 0.66 else "RED")),
+        weather=weather_minimal,
+        model_roc_auc=roc_auc,
         historical=historical,
     )
 
@@ -181,7 +186,7 @@ async def predict_sensor(req: SensorPredictionRequest):
             raise HTTPException(
                 status_code=404,
                 detail=f"No weather file found for lat={req.lat}, lon={req.lon}. "
-                       "Call POST /api/v1/map/weather with confirm=true first.",
+                       "Provide a weather file in api/data/ or call /predict/risks/geo to compute risks directly.",
             )
 
     try:
@@ -197,7 +202,7 @@ class FullPredictionResponse(BaseModel):
     toxins: dict[str, float]
     accuracy: float
     risk_level: str
-    weather: dict[str, float]
+    weather: dict[str, Any]
     model_roc_auc: float
     source_file: str
     result_file: str
@@ -214,26 +219,26 @@ async def predict_full(req: GeoPredictionRequest):
     toxins                    : per-toxin breakdown (%)
     accuracy                  : weighted accuracy (ZEN real ROC-AUC, DON/FUM mock)
     """
+    # Build features using only date/lat/lon and run per-strain models
+    features = {"date": req.date, "lat": req.lat, "lon": req.lon}
     try:
-        ml_result = await weather_model.predict_geo(
-            lat=req.lat,
-            lon=req.lon,
-            crop_group=req.crop_group,
-            sampling_point=req.sampling_point,
-        )
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=503, detail=str(e))
-    except httpx.HTTPError as e:
-        raise HTTPException(status_code=502, detail=f"Open-Meteo request failed: {e}")
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        per_strain = await predict_risks_from_features(features)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
+    probs = [v["incertitude"] / 100.0 for v in per_strain.values() if v.get("incertitude") is not None]
+    accs = [v["accuracy"] for v in per_strain.values() if v.get("accuracy") is not None]
+    zen_prob = float(sum(probs) / len(probs)) if probs else 0.0
+    roc_auc = float(sum(accs) / len(accs) / 100.0) if accs else 0.0
+
+    # Use a minimal weather dict (run_unified uses defaults for missing keys)
+    weather_minimal = {"date": req.date}
     result = contamination.run_unified(
-        weather=ml_result["weather"],
+        weather=weather_minimal,
         lat=req.lat,
         lon=req.lon,
-        zen_probability=ml_result["zen_probability"],
-        zen_roc_auc=ml_result["model_roc_auc"],
+        zen_probability=zen_prob,
+        zen_roc_auc=roc_auc,
     )
     return FullPredictionResponse(**result)
 
@@ -254,3 +259,45 @@ async def predict_batch(
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Failed to process CSV: {e}")
+
+
+@router.post("/risks")
+async def predict_risks(
+    file: UploadFile = File(..., description="CSV with features for prediction"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return per-strain contamination risks and model accuracies for an uploaded CSV."""
+    if not (file.filename or "").endswith(".csv"):
+        raise HTTPException(status_code=422, detail="Uploaded file must be a .csv")
+    content = await file.read()
+    try:
+        resp = await predict_risks_from_csv(content, db)
+        return resp
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class RisksGeoRequest(BaseModel):
+    lat: float = Field(..., ge=-90, le=90)
+    lon: float = Field(..., ge=-180, le=180)
+    date: str | None = Field(None, description="ISO date string (e.g. 2026-06-07) to use as input for models")
+
+
+@router.post("/risks/geo")
+async def predict_risks_geo(req: RisksGeoRequest):
+    """Given lat/lon and a date, run per-strain models using only these features (no external API calls).
+
+    The feature contract is: `date` (ISO string), `lat`, `lon`.
+    """
+    # Build feature dict expected by prediction_service; models should accept these columns.
+    features = {
+        'date': req.date,
+        'lat': req.lat,
+        'lon': req.lon,
+    }
+
+    try:
+        resp = await predict_risks_from_features(features)
+        return resp
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

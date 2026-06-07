@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { CloudRain, Droplets, Gauge, Sun, Thermometer, Wind } from 'lucide-react';
 import { SatelliteMap, type MapLocation } from './SatelliteMap';
+import StrainRiskList from '@/components/StrainRiskList';
 
 const fungalTargets = ['Fusarium graminearum', 'Fusarium culmorum', 'Fusarium verticillioides'];
 
@@ -356,6 +357,7 @@ export function PredictionMap() {
     contamination_probability: number;
     accuracy: number;
   } | null>(null);
+  const [perStrainRisks, setPerStrainRisks] = useState<Record<string, { incertitude: number | null; accuracy: number | null } > | null>(null);
   const [locationName, setLocationName] = useState<{ country: string; region: string } | null>(null);
 
   const handleLocationSelect = async (location: MapLocation) => {
@@ -384,33 +386,27 @@ export function PredictionMap() {
     setMlResult(null);
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
-    const [geoRes, weatherRes] = await Promise.allSettled([
-      fetch(`${apiUrl}/api/v1/predict/geo`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lat: selectedLocation.lat,
-          lon: selectedLocation.lng,
-          crop_group: selectedFungus === 'Fusarium verticillioides' ? 'maize' : 'wheat',
-          sampling_point: 'Primary production',
-        }),
+    const geoResponse = await fetch(`${apiUrl}/api/v1/predict/geo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        lat: selectedLocation.lat,
+        lon: selectedLocation.lng,
+        crop_group: selectedFungus === 'Fusarium verticillioides' ? 'maize' : 'wheat',
+        sampling_point: 'Primary production',
+        date: currentDate.toISOString().split('T')[0],
       }),
-      fetch(`${apiUrl}/api/v1/map/weather`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ latitude: selectedLocation.lat, longitude: selectedLocation.lng, confirm: true }),
-      }),
-    ]);
+    });
 
-    if (geoRes.status === 'fulfilled' && geoRes.value.ok) {
-      const data = await geoRes.value.json();
+    if (geoResponse.ok) {
+      const data = await geoResponse.json();
       const w = data.weather as Record<string, number>;
       setWeather({
-        temperature: Math.round(w.temperature_2m_mean ?? DEFAULT_WEATHER.temperature),
-        humidity: Math.round(w.relative_humidity_2m_mean ?? DEFAULT_WEATHER.humidity),
-        rainfall: Math.round(w.precipitation_sum ?? DEFAULT_WEATHER.rainfall),
+        temperature: Math.round((w.temperature_2m_mean ?? DEFAULT_WEATHER.temperature) as number),
+        humidity: Math.round((w.relative_humidity_2m_mean ?? DEFAULT_WEATHER.humidity) as number),
+        rainfall: Math.round((w.precipitation_sum ?? DEFAULT_WEATHER.rainfall) as number),
         wind: DEFAULT_WEATHER.wind,
-        sunshine: Math.round((1 - (w.cloud_cover_mean ?? 50) / 100) * 13),
+        sunshine: Math.round(((1 - ((w.cloud_cover_mean ?? 50) as number) / 100) * 13) as number),
         pressure: DEFAULT_WEATHER.pressure,
       });
       setMlResult({
@@ -424,16 +420,31 @@ export function PredictionMap() {
       setMlResult(null);
     }
 
-    if (weatherRes.status === 'fulfilled' && weatherRes.value.ok) {
-      const data = await weatherRes.value.json();
-      if (data.prediction) setPredictionResult(data.prediction);
-    }
-
     setIsLoading(false);
     setHasSubmitted(true);
     requestAnimationFrame(() => {
       document.getElementById('simulation-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
+  };
+
+  const fetchPerStrainRisks = async () => {
+    if (!selectedLocation) return;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+    try {
+      const res = await fetch(`${apiUrl}/api/v1/predict/risks/geo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat: selectedLocation.lat, lon: selectedLocation.lng, date: currentDate.toISOString().split('T')[0] }),
+      });
+      if (!res.ok) {
+        setPerStrainRisks(null);
+        return;
+      }
+      const data = await res.json();
+      setPerStrainRisks(data as Record<string, { incertitude: number | null; accuracy: number | null }>);
+    } catch (e) {
+      setPerStrainRisks(null);
+    }
   };
 
   const risk = prediction?.risk;
@@ -653,6 +664,12 @@ export function PredictionMap() {
                     threshold={prediction.thresholdUgKg}
                     unit="µg/kg"
                   />
+                </div>
+                <div style={{ marginTop: 18 }}>
+                  <button className="prediction-action-btn" type="button" onClick={fetchPerStrainRisks}>
+                    Afficher risques par souche
+                  </button>
+                  {perStrainRisks && <StrainRiskList risks={perStrainRisks} />}
                 </div>
               </div>
             </div>
