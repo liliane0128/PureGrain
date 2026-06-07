@@ -500,8 +500,6 @@ export function PredictionMap() {
             <SatelliteMap selectedLocation={selectedLocation} onLocationSelect={handleLocationSelect} />
 
             <div className="prediction-overlay-panel prediction-overlay-left">
-              <h3 className="overlay-panel-title">Paramètres</h3>
-
               <div className="prediction-location-info">
                 <span>Coordonnées de la parcelle</span>
                 {selectedLocation ? (
@@ -560,9 +558,6 @@ export function PredictionMap() {
                     </div>
                   ))}
                 </div>
-                <p className="sim-weather-context">
-                  Récolte estimée : <strong>{prediction.harvestDate}</strong>
-                </p>
               </aside>
 
               <div className="sim-output">
