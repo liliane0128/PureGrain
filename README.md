@@ -1,71 +1,92 @@
 # PureGrain
 
-Predictive detection of fungal contamination (mycotoxins) in cereal crops.  
-Built for the **D4Gen 2026 Hackathon**.
-
-A portable biosensor measures Zearalenone (ZEN) levels in the field. PureGrain correlates that reading with historical weather data to predict contamination risk before harvest and during silo storage.
+Plateforme DeepTech de prédiction du risque de contamination fongique (mycotoxines) dans les céréales.  
+Développée pour le **Hackathon D4Gen 2026**.
 
 ---
 
-## How it works
+## Concept
 
+Un biocapteur portable mesure les taux de mycotoxines (ZEN, DON, Aflatoxines) directement sur la parcelle. PureGrain corrèle ces mesures avec les données météo historiques sur 60 jours pour prédire le risque de contamination avant la récolte et en silo.
+
+**Pipeline :**
 ```
-Sensor reading (ZEN ppb)
-        +
-GPS coordinates  →  Open-Meteo API  →  48h temp & humidity
-        ↓
-  Feature engineering (14 features)
-        ↓
-  Random Forest classifier
-        ↓
-  GREEN / ORANGE / RED  +  storage recommendation
+GPS (lat/lon)
+      ↓
+Open-Meteo API — 61 jours de météo horaire agrégée en journalier
+      ↓
+Ingénierie de features (75 features : lags, stats, dérivées)
+      ↓
+LightGBM — classification ZEN / DON / Aflatoxines
+      ↓
+Risque FAIBLE / MODÉRÉ / ÉLEVÉ
 ```
+
+Le modèle (`toxin_detection_classifier.txt`) a été entraîné sur 675 échantillons de céréales européens avec données météo NASA POWER à 60 jours de lag.
 
 ---
 
 ## Stack
 
-| Layer | Tech |
+| Couche | Technologie |
 |---|---|
-| Backend | FastAPI, Python 3.12 |
-| ML | scikit-learn (Random Forest) |
-| Database | PostgreSQL 16 + SQLAlchemy async + Alembic |
-| Weather | Open-Meteo API (free, no key) |
+| Backend | FastAPI + Python 3.11 |
+| ML | LightGBM |
+| Base de données | PostgreSQL 16 + SQLAlchemy async + Alembic |
+| Météo | Open-Meteo API (gratuit, sans clé) |
+| Frontend | Next.js 15 + React 19 + TypeScript |
 | Infra | Docker Compose |
 
 ---
 
-## Quick start
+## Lancement
+
+### Backend (Docker)
 
 ```bash
-make up        # build + start db & api
-make logs      # follow logs
+docker compose up --build
 ```
 
-The API trains the model and runs migrations automatically on first start.
+L'API est disponible sur `http://localhost:8000`.  
+Documentation interactive : `http://localhost:8000/docs`
 
-**Swagger UI:** `http://localhost:8000/docs`
-
----
-
-## Key endpoints
-
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/api/v1/predict/auto?parcelle_id=1` | Predict risk (weather fetched automatically) |
-| `POST` | `/api/v1/predict/` | Predict risk (manual weather input) |
-| `GET` | `/api/v1/predict/features/importance` | RF feature importances |
-| `POST` | `/api/v1/parcelles/` | Create a field (requires lat/lon) |
-| `GET` | `/api/v1/parcelles/{id}/history` | Prediction history for a field |
-| `GET` | `/health` | Service + model status |
-
----
-
-## Other commands
+### Frontend
 
 ```bash
-make retrain      # force retrain the Random Forest
-make migrate      # apply Alembic migrations
-make psql         # open a psql shell
-make clean        # stop containers and delete volumes
+cd frontend
+npm install
+npm run dev
+```
+
+Le site est disponible sur `http://localhost:3000`.
+
+---
+
+## Utilisation du simulateur
+
+1. Ouvrir `http://localhost:3000`
+2. Naviguer jusqu'à la section **Simulateur agronomique**
+3. Rechercher une parcelle via la barre de recherche ou cliquer sur la carte
+4. Sélectionner le type de céréale (Blé / Maïs / Orge)
+5. Cliquer sur **Lancer la simulation**
+
+**Scénarios de démonstration** (saisir dans la barre de recherche) :
+
+| Ville | Céréale | Risque attendu |
+|---|---|---|
+| Tours | Blé | 🟢 Faible |
+| Bordeaux | Maïs | 🟡 Modéré |
+| Amiens | Blé | 🔴 Élevé |
+
+---
+
+## Endpoint principal
+
+```
+POST /api/v1/predict/full
+{
+  "lat": 49.89,
+  "lon": 2.30,
+  "crop_group": "wheat"
+}
 ```
