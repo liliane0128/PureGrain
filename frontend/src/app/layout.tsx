@@ -28,6 +28,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr" className="preload-scroll-lock" suppressHydrationWarning>
       <head>
+        <link rel="preload" href="/images/field.webp" as="image" type="image/webp" />
+        <link rel="preload" href="/videos/hero.webm" as="video" type="video/webm" />
         {/* Masque brièvement le body pendant le verrouillage initial du scroll pour éviter un flash de position restaurée. */}
         <style>{`
           html.preload-scroll-lock body {
