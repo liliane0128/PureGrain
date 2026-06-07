@@ -1,9 +1,11 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Any
 
-from app.services import contamination
-from app.services import lgbm_pipeline
+from app.db.session import get_db
+from app.db.models.prediction_result import Prediction
+from app.services import contamination, lgbm_pipeline
 
 router = APIRouter(prefix="/predict", tags=["prediction"])
 
@@ -35,16 +37,15 @@ class FullPredictionResponse(BaseModel):
 
 
 @router.post("/full", response_model=FullPredictionResponse)
-async def predict_full(req: GeoPredictionRequest):
+async def predict_full(req: GeoPredictionRequest, db: AsyncSession = Depends(get_db)):
     """
     Unified prediction endpoint.
 
     Pipeline:
       1. Open-Meteo API — 61 days of hourly weather aggregated to daily
       2. Lag feature engineering (75 features matching LightGBM training)
-      3. LightGBM — ZEN (zearalenone) + DON (deoxynivalenol) probabilities
-      4. FUM (fumonisines) mock based on temperature/humidity
-      5. Save weather CSV + result JSON to api/data/
+      3. LightGBM — ZEN / DON / Aflatoxins probabilities
+      4. Save result to PostgreSQL + CSV/JSON files
     """
     try:
         lgbm_result = await lgbm_pipeline.predict_toxins(req.lat, req.lon, req.crop_group)
@@ -59,4 +60,19 @@ async def predict_full(req: GeoPredictionRequest):
         don_probability=lgbm_result["DON"],
         afla_probability=lgbm_result["AFLA"],
     )
+
+    db_row = Prediction(
+        lat=req.lat,
+        lon=req.lon,
+        crop_group=req.crop_group,
+        zen_probability=lgbm_result["ZEN"],
+        don_probability=lgbm_result["DON"],
+        afla_probability=lgbm_result["AFLA"],
+        contamination_probability=result["contamination_probability"] / 100.0,
+        risk_level=result["risk_level"],
+        weather=lgbm_result["weather"],
+    )
+    db.add(db_row)
+    await db.commit()
+
     return FullPredictionResponse(**result)
