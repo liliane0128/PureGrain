@@ -4070,38 +4070,44 @@ img {
 
 /* SIMULATION RESULTS SECTION */
 .simulation-results-section {
-  /* Tableau de bord riche : on autorise une hauteur naturelle (pas de clipping). */
-  height: auto;
-  min-height: 100vh;
-  overflow: visible;
+  height: 100vh;
+  min-height: unset;
+  overflow: hidden;
   justify-content: flex-start;
+  display: flex;
+  flex-direction: column;
   background:
     radial-gradient(120% 80% at 80% 0%, rgba(52, 211, 153, 0.06), transparent 60%),
     #0a0a0c;
-  padding: 110px 0 70px;
+  padding: 76px 0 28px;
 }
 
 .sim-results-inner {
   width: 100%;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xl);
+  gap: 12px;
 }
 
 .sim-results-header {
   text-align: center;
+  flex-shrink: 0;
 }
 
 .sim-results-header h2 {
-  font-size: clamp(1.7rem, 3.4vw, 2.6rem);
+  font-size: clamp(1.1rem, 2vw, 1.5rem);
   color: var(--color-white);
   letter-spacing: -0.018em;
 }
 
 .sim-results-grid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-lg);
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  gap: 16px;
 }
 
 /* Panneau météo (entrées utilisateur) */
@@ -4109,10 +4115,11 @@ img {
   background: var(--surface-glass);
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: var(--border-radius-lg);
-  padding: var(--spacing-lg);
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: 10px;
+  overflow: hidden;
 }
 
 .sim-panel-title {
@@ -4130,11 +4137,13 @@ img {
   line-height: 1.5;
 }
 
-/* Relevé météo : 6 indicateurs sur une seule ligne horizontale. */
+/* Relevé météo : 2×3 dans la colonne gauche. */
 .sim-weather-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
 }
 
 .sim-weather-card {
@@ -4142,8 +4151,8 @@ img {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 16px 10px;
+  gap: 4px;
+  padding: 10px 8px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--border-radius-md);
@@ -4194,17 +4203,20 @@ img {
 .sim-output {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  min-height: 0;
 }
 
 .sim-risk-card {
   background: var(--surface-glass);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--border-radius-lg);
-  padding: var(--spacing-lg);
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .sim-risk-head {
@@ -4334,6 +4346,18 @@ img {
     grid-template-columns: 1fr;
   }
 
+  .sim-results-grid {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+
+  .simulation-results-section {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+    padding: 90px 0 40px;
+  }
+
   .sim-weather-grid {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -4458,4 +4482,46 @@ img {
   .molecules-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Grain type selector ─────────────────────────────────────────── */
+.crop-selector {
+  display: flex;
+  gap: 6px;
+}
+
+.crop-selector-btn {
+  flex: 1;
+  padding: 7px 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.crop-selector-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.crop-selector-btn.is-active {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* ── Toxin SVG bar chart ─────────────────────────────────────────── */
+.toxin-chart {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  display: block;
+  overflow: visible;
+  flex: 1;
+  min-height: 0;
 }

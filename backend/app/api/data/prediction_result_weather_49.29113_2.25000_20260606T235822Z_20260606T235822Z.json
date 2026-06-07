@@ -1,7 +1,0 @@
-{
-  "contamination_probability": 55.5,
-  "accuracy": 86.9,
-  "source_file": "weather_49.29113_2.25000_20260606T235822Z.csv",
-  "result_file": "prediction_result_weather_49.29113_2.25000_20260606T235822Z_20260606T235822Z.json",
-  "generated_at": "20260606T235822Z"
-}

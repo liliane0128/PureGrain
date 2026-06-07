@@ -9,7 +9,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '003_add_model_registry'
-down_revision = '002_import_records_schema'
+down_revision = '002'
 branch_labels = None
 depends_on = None
 

@@ -212,29 +212,40 @@ class FullPredictionResponse(BaseModel):
 @router.post("/full", response_model=FullPredictionResponse)
 async def predict_full(req: GeoPredictionRequest):
     """
-    Unified endpoint: fetches weather → runs ZEN (real Random Forest) + DON & FUM (mock)
+    Unified endpoint: fetches weather (Open-Meteo) → ZEN mock + DON & FUM mock
     → saves CSV + result JSON → returns full payload.
 
-    contamination_probability : weighted average of ZEN / DON / FUM (%)
-    toxins                    : per-toxin breakdown (%)
-    accuracy                  : weighted accuracy (ZEN real ROC-AUC, DON/FUM mock)
+    ZEN falls back to a weather-based heuristic until a trained model is placed in
+    app/ml/weights/. Once models are discovered there, they take precedence.
     """
-    # Build features using only date/lat/lon and run per-strain models
-    features = {"date": req.date, "lat": req.lat, "lon": req.lon}
+    # 1. Fetch real weather from Open-Meteo
     try:
+        weather = await weather_model._fetch_daily_weather(req.lat, req.lon)
+    except Exception:
+        weather = {}
+
+    # 2. Try real models from weights dir; fall back to mock ZEN when none loaded
+    per_strain: dict = {}
+    try:
+        features = {"date": req.date, "lat": req.lat, "lon": req.lon}
         per_strain = await predict_risks_from_features(features)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        pass
 
     probs = [v["incertitude"] / 100.0 for v in per_strain.values() if v.get("incertitude") is not None]
-    accs = [v["accuracy"] for v in per_strain.values() if v.get("accuracy") is not None]
-    zen_prob = float(sum(probs) / len(probs)) if probs else 0.0
-    roc_auc = float(sum(accs) / len(accs) / 100.0) if accs else 0.0
+    accs  = [v["accuracy"] for v in per_strain.values() if v.get("accuracy") is not None]
 
-    # Use a minimal weather dict (run_unified uses defaults for missing keys)
-    weather_minimal = {"date": req.date}
+    if probs:
+        zen_prob = float(sum(probs) / len(probs))
+        roc_auc  = float(sum(accs) / len(accs) / 100.0) if accs else 0.0
+    else:
+        row      = {**weather, "latitude": req.lat, "longitude": req.lon}
+        zen_prob = contamination._zen_mock(row, contamination._seed(req.lat, req.lon))
+        roc_auc  = 0.0
+
+    # 3. Compute DON / FUM mocks + save files + return
     result = contamination.run_unified(
-        weather=weather_minimal,
+        weather=weather,
         lat=req.lat,
         lon=req.lon,
         zen_probability=zen_prob,
