@@ -13,6 +13,48 @@ type WeatherInputs = {
   pressure: number;
 };
 
+type ToxinResults = { ZEN: number; DON: number; AFLA: number };
+
+type DemoPreset = {
+  label: string;
+  flag: string;
+  location: MapLocation;
+  locationName: { country: string; region: string };
+  weather: WeatherInputs;
+  toxins: ToxinResults;
+  cropGroup: 'wheat' | 'maize' | 'barley';
+};
+
+const DEMO_PRESETS: DemoPreset[] = [
+  {
+    label: 'Tours',
+    flag: '🇫🇷',
+    location: { lat: 47.3941, lng: 0.6848 },
+    locationName: { country: 'France', region: 'Tours' },
+    weather: { temperature: 22, humidity: 65, rainfall: 4, wind: 16, sunshine: 8, pressure: 1016 },
+    toxins: { ZEN: 14, DON: 9, AFLA: 6 },
+    cropGroup: 'wheat',
+  },
+  {
+    label: 'Amiens',
+    flag: '🇫🇷',
+    location: { lat: 49.8941, lng: 2.2958 },
+    locationName: { country: 'France', region: 'Amiens' },
+    weather: { temperature: 26, humidity: 87, rainfall: 22, wind: 13, sunshine: 4, pressure: 1006 },
+    toxins: { ZEN: 74, DON: 61, AFLA: 38 },
+    cropGroup: 'wheat',
+  },
+  {
+    label: 'Bordeaux',
+    flag: '🇫🇷',
+    location: { lat: 44.8378, lng: -0.5792 },
+    locationName: { country: 'France', region: 'Bordeaux' },
+    weather: { temperature: 25, humidity: 76, rainfall: 12, wind: 15, sunshine: 7, pressure: 1011 },
+    toxins: { ZEN: 43, DON: 37, AFLA: 21 },
+    cropGroup: 'maize',
+  },
+];
+
 const DEFAULT_WEATHER: WeatherInputs = {
   temperature: 23,
   humidity: 78,
@@ -69,7 +111,7 @@ export function PredictionMap() {
   const [weather, setWeather] = useState<WeatherInputs>(DEFAULT_WEATHER);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [toxinResults, setToxinResults] = useState<{ ZEN: number; DON: number; AFLA: number } | null>(null);
+  const [toxinResults, setToxinResults] = useState<ToxinResults | null>(null);
   const [locationName, setLocationName] = useState<{ country: string; region: string } | null>(null);
   const [cropGroup, setCropGroup] = useState<'wheat' | 'maize' | 'barley'>('wheat');
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,9 +121,31 @@ export function PredictionMap() {
   const currentDate = useMemo(() => new Date(), []);
   const today = useMemo(() => formatDate(currentDate), [currentDate]);
 
+  const loadDemoPreset = (preset: DemoPreset) => {
+    setMapCenter({ ...preset.location });
+    setSelectedLocation(preset.location);
+    setLocationName(preset.locationName);
+    setWeather(preset.weather);
+    setToxinResults(preset.toxins);
+    setCropGroup(preset.cropGroup);
+    setHasSubmitted(true);
+    setTimeout(() => {
+      document.getElementById('simulation-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 950);
+  };
+
   const searchLocation = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
+
+    const q = searchQuery.trim().toLowerCase();
+    const preset = DEMO_PRESETS.find((p) => q.includes(p.label.toLowerCase()));
+    if (preset) {
+      loadDemoPreset(preset);
+      setSearchQuery('');
+      return;
+    }
+
     setIsSearching(true);
     try {
       const res = await fetch(
@@ -98,6 +162,7 @@ export function PredictionMap() {
       // geocoding best-effort
     }
     setIsSearching(false);
+    setSearchQuery('');
   };
 
   const handleLocationSelect = async (location: MapLocation) => {
@@ -298,12 +363,10 @@ export function PredictionMap() {
                     const yFor = (pct: number) => PAD_T + iH * (1 - pct / 100);
                     return (
                       <svg viewBox={`0 0 ${VW} ${VH}`} className="toxin-chart" aria-label="Risque mycotoxines">
-                        {/* Y-axis labels only */}
                         {[0, 25, 50, 75, 100].map(v => (
                           <text key={v} x={PAD_L - 4} y={yFor(v) + 3.5} textAnchor="end"
                             fontSize={8.5} fill="rgba(255,255,255,0.3)">{v}%</text>
                         ))}
-                        {/* threshold lines (colored) + zone labels outside chart */}
                         {([
                           { v: 66, topV: 100, label: 'Élevé',  color: '#f87171' },
                           { v: 33, topV: 66,  label: 'Modéré', color: '#f5b34d' },
@@ -325,7 +388,6 @@ export function PredictionMap() {
                             >{label}</text>
                           </g>
                         ))}
-                        {/* bars */}
                         {TOXIN_BARS.map(({ key, label }, i) => {
                           const pct = toxinResults[key];
                           const color = toxinColor(pct);
@@ -345,7 +407,6 @@ export function PredictionMap() {
                             </g>
                           );
                         })}
-                        {/* X axis */}
                         <line x1={PAD_L} y1={PAD_T + iH} x2={VW - PAD_R} y2={PAD_T + iH}
                           stroke="rgba(255,255,255,0.15)" strokeWidth={1} />
                       </svg>
