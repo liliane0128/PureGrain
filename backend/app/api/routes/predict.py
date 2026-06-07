@@ -57,5 +57,6 @@ async def predict_full(req: GeoPredictionRequest):
         lon=req.lon,
         zen_probability=lgbm_result["ZEN"],
         don_probability=lgbm_result["DON"],
+        afla_probability=lgbm_result["AFLA"],
     )
     return FullPredictionResponse(**result)

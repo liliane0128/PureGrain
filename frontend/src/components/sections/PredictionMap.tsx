@@ -55,7 +55,7 @@ function toxinColor(pct: number): string {
 const TOXIN_BARS = [
   { key: 'ZEN' as const, label: 'Zéaralénone' },
   { key: 'DON' as const, label: 'Déoxynivalénol' },
-  { key: 'FUM' as const, label: 'Fumonisines' },
+  { key: 'AFLA' as const, label: 'Aflatoxines' },
 ];
 
 const CROP_OPTIONS = [
@@ -69,7 +69,7 @@ export function PredictionMap() {
   const [weather, setWeather] = useState<WeatherInputs>(DEFAULT_WEATHER);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [toxinResults, setToxinResults] = useState<{ ZEN: number; DON: number; FUM: number } | null>(null);
+  const [toxinResults, setToxinResults] = useState<{ ZEN: number; DON: number; AFLA: number } | null>(null);
   const [locationName, setLocationName] = useState<{ country: string; region: string } | null>(null);
   const [cropGroup, setCropGroup] = useState<'wheat' | 'maize' | 'barley'>('wheat');
 
@@ -127,9 +127,9 @@ export function PredictionMap() {
         });
         if (data.toxins) {
           setToxinResults({
-            ZEN: data.toxins.ZEN ?? 0,
-            DON: data.toxins.DON ?? 0,
-            FUM: data.toxins.FUM ?? 0,
+            ZEN:  data.toxins.ZEN  ?? 0,
+            DON:  data.toxins.DON  ?? 0,
+            AFLA: data.toxins.AFLA ?? 0,
           });
         }
       } else {

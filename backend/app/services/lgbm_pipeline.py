@@ -126,10 +126,12 @@ def _build_features(weather_df: pd.DataFrame, crop_group: str) -> dict:
     return feats
 
 
-def _run_model(base_feats: dict, toxin_col: str) -> float:
+def _run_model(base_feats: dict, toxin_col: str | None) -> float:
+    """Predict one toxin. toxin_col=None means aflatoxins (all dummies = 0, baseline)."""
     model = _load_model()
     row = {t: 0 for t in _TOXIN_DUMMIES}
-    row[toxin_col] = 1
+    if toxin_col is not None:
+        row[toxin_col] = 1
     row.update(base_feats)
     X = pd.DataFrame([{f: row.get(f, 0) for f in model.feature_name()}])
     return float(model.predict(X)[0])
@@ -139,15 +141,16 @@ async def predict_toxins(lat: float, lon: float, crop_group: str = "wheat") -> d
     """
     Full pipeline: Open-Meteo 61-day weather → lag features → LightGBM.
 
-    Returns { ZEN: float, DON: float, weather: dict } with probabilities in [0, 1].
-    Raises on network error or missing model file.
+    Returns { ZEN, DON, AFLA: float, weather: dict } with probabilities in [0, 1].
+    Aflatoxins = baseline category (all toxin dummies = 0).
     """
     weather_df = await _fetch_daily_weather(lat, lon)
     base_feats = _build_features(weather_df, crop_group)
 
-    zen_prob, don_prob = await asyncio.gather(
+    zen_prob, don_prob, afla_prob = await asyncio.gather(
         asyncio.to_thread(_run_model, base_feats, "toxin_name_zearalenone"),
         asyncio.to_thread(_run_model, base_feats, "toxin_name_deoxynivalenol"),
+        asyncio.to_thread(_run_model, base_feats, None),
     )
 
     latest = weather_df.iloc[-1]
@@ -160,4 +163,9 @@ async def predict_toxins(lat: float, lon: float, crop_group: str = "wheat") -> d
         "cloud_cover_mean":          50.0,
     }
 
-    return {"ZEN": float(zen_prob), "DON": float(don_prob), "weather": weather_summary}
+    return {
+        "ZEN":  float(zen_prob),
+        "DON":  float(don_prob),
+        "AFLA": float(afla_prob),
+        "weather": weather_summary,
+    }
