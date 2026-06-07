@@ -28,7 +28,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://puregrain:puregrain@db:5432/puregrain
       DEBUG: "false"
     volumes:
-      - model_data:/app/app/data
+      - ./backend/app/data:/app/app/data
       - ./backend/app/api/data:/app/app/api/data
     depends_on:
       db:
@@ -36,4 +36,3 @@ services:
 
 volumes:
   postgres_data:
-  model_data:
